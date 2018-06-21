@@ -7,34 +7,20 @@ import json
 from shutil import copyfile
 
 class Annotator():
-'''Annotate multiple videos simultaneously by clicking on them. The current configuration
-requires the videos to be in subfolders located in "videos_folder". The algorithm will loop
-through the folders and load all the videos in them.
+    '''Annotate multiple videos simultaneously by clicking on them. The current configuration
+    requires the videos to be in subfolders located in "videos_folder". The algorithm will loop
+    through the folders and load all the videos in them.
+    
+    /!\ LIMITATIONS /!\ 
+    This code was mainly written for my specific application and I decided to upload it on github
+    as it might be helpful for other people.
+    It assumes that all the videos are the same length (100 frames) and are black and white. I will
+    try to update the code to make it more general, according to the time available and the number
+    of requests.'''
 
-/!\ LIMITATIONS /!\ 
-This code was mainly written for my specific application and I decided to upload it on github
-as it might be helpful for other people.
-It assumes that all the videos are the same length (100 frames) and are black and white. I will
-try to update the code to make it more general, according to the time available and the number
-of requests.'''
-
-    def __init__(self):
-        # Set the labels        
-        self.labels = [
-                {'name': 'walking', 
-                'color': (0, 200, 0),
-                'event': cv2.EVENT_LBUTTONDOWN},
-
-                {'name': 'sitting', 
-                'color': (0, 0, 200),
-                'event': cv2.EVENT_LBUTTONDBLCLK},
-                 
-                 {'name': 'standing', 
-                'color': (0, 140, 255),
-                'event': cv2.EVENT_MBUTTONDOWN}
-                ]
-        # Start the program
-        self.main()
+    def __init__(self, labels):
+        # Set the labels
+        self.labels = labels
 
 
     def batch_generator(self, videos_folder, starting_day, starting_video, total_vid_ann):
@@ -319,5 +305,18 @@ of requests.'''
 
            
 if __name__ == '__main__':
-    annotator = Annotator()
+    annotator = Annotator([
+                {'name': 'walking', 
+                'color': (0, 200, 0),
+                'event': cv2.EVENT_LBUTTONDOWN},
 
+                {'name': 'sitting', 
+                'color': (0, 0, 200),
+                'event': cv2.EVENT_LBUTTONDBLCLK},
+                 
+                 {'name': 'standing', 
+                'color': (0, 140, 255),
+                'event': cv2.EVENT_MBUTTONDOWN}
+                ])
+
+    annotator.main()
