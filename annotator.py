@@ -22,7 +22,18 @@ class Annotator():
         # Set the labels
         self.labels = labels
 
-
+    
+    def find_videos(self, videos_folder, video_ext):
+        '''Loop over the video folder looking for video files'''
+        videos_list = []
+        for folder, _, files in os.walk(videos_folder):
+            for file in files:
+                fullfile_path = os.path.join(folder, file)
+                if os.path.splitext(fullfile_path)[1] in video_ext:
+                    videos_list.append(os.path.join(folder, file))
+                    
+        return videos_list
+        
     def batch_generator(self, videos_folder, starting_day, starting_video, total_vid_ann):
         '''Generator that reads the videos in a folder and returns a mosaic of
         videos in the form of numpy array'''
@@ -207,12 +218,15 @@ class Annotator():
         videos_folder = r'G:\Videos'
         annotation_file = 'labels.json'
         status_file = 'status.json'
+        video_ext = ['.mp4', '.avi']
         N_per_time = 100
         screen_ratio = 16/9
         
         # Debug
         self.debug_verbose = 1
         
+        # Find video files in the video folder
+        videos_list = self.find_videos(videos_folder, video_ext)
         # Load status
         if os.path.isfile(status_file):
             with open(status_file, 'r') as jsonFile:
