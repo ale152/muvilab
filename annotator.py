@@ -33,7 +33,63 @@ class Annotator():
                     videos_list.append(os.path.join(folder, file))
                     
         return videos_list
+    
+
+    def create_mosaic(self, videos_list, Nx, Ny):
+        '''This function create a mosaic of videos given a set of video files'''
+        # List video files
+        init = True
+        # Loop over all the video files in the day folder
+        for vi, video_file in enumerate(videos_list):
+            print('\r', 'Loading file %s' % video_file, end=' ')
+            
+            # Deal with long lists
+            if vi == Nx*Ny:
+                print('The list of videos doesn\'t fit in the mosaic.')
+                break
+            
+            # Open the video
+            cap = cv2.VideoCapture(video_file)
+            
+            # Load the video frames
+            while(cap.isOpened()):
+                ret, frame = cap.read()
+                
+                # Initialise the video            
+                if init:
+                    fdim = frame.shape
+                    n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    mosaic = np.zeros((n_frames, fdim[0]*Ny, fdim[1]*Nx, 3))
+                    i_scr = 0
+                    j_scr = 0
+                    k_time = 0
+                    mosaic_names = [[[] for _ in range(Nx)] for _ in range(Ny)]
+                    init = False
+                
+                # Add video to the grid
+                mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
+                             j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
+                             
+                # Save the file name
+                mosaic_names[i_scr][j_scr] = video_file
+                
+                # When all the frames have been read
+                k_time += 1
+                if k_time == n_frames:
+                    cap.release()
+                    k_time = 0
+                    break
+            
+            # Increase the mosaic indices
+            i_scr += 1
+            if i_scr == Ny:
+                i_scr = 0
+                j_scr += 1
         
+        # Write some metadata to yield with the batch
+        return mosaic, mosaic_names
+
+    
     def batch_generator(self, videos_folder, starting_day, starting_video, total_vid_ann):
         '''Generator that reads the videos in a folder and returns a mosaic of
         videos in the form of numpy array'''
@@ -227,6 +283,15 @@ class Annotator():
         
         # Find video files in the video folder
         videos_list = self.find_videos(videos_folder, video_ext)
+        
+        # Calculate number of videos per row/col
+        Ny = int(np.sqrt(N_per_time/screen_ratio))
+        Nx = int(np.sqrt(N_per_time*screen_ratio))
+        N_per_time = Nx*Ny
+        
+        # Test mosaic
+        mosaic, name = self.create_mosaic(videos_list[0:100], Nx, Ny)
+        
         # Load status
         if os.path.isfile(status_file):
             with open(status_file, 'r') as jsonFile:
@@ -250,10 +315,6 @@ class Annotator():
         else:
             self.annotations = []
         
-        # Calculate number of videos per row/col
-        self.Ny = int(np.sqrt(N_per_time/screen_ratio))
-        self.Nx = int(np.sqrt(N_per_time*screen_ratio))
-        self.N_per_time = self.Nx*self.Ny
         
         # Initialise the GUI
         cv2.namedWindow('sts_annotation')
