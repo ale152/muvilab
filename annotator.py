@@ -34,14 +34,14 @@ class Annotator():
                     
         return videos_list
     
-    def list_to_pages(self, videos_list, Nx, Ny):
+    def list_to_pages(self, videos_list):
         '''Split a list of videos into an array arranged by pages of mosaics'''
-        N_pages = int(np.ceil(len(videos_list)/Nx/Ny))
-        video_pages = [[[[] for _ in range(Nx)] for _ in range(Ny)] for _ in range(N_pages)]
+        N_pages = int(np.ceil(len(videos_list)/self.Nx/self.Ny))
+        video_pages = [[[[] for _ in range(self.Nx)] for _ in range(self.Ny)] for _ in range(N_pages)]
         vid = 0
         for p in range(N_pages):
-            for i in range(Ny):
-                for j in range(Nx):
+            for i in range(self.Ny):
+                for j in range(self.Nx):
                     video_pages[p][i][j] = {'video': videos_list[vid],
                                             'label': ''}
                     if vid == len(videos_list)-1:
@@ -49,7 +49,7 @@ class Annotator():
                     else:
                         vid += 1
 
-    def create_mosaic(self, videos_list, Nx, Ny):
+    def create_mosaic(self, videos_list):
         '''This function create a mosaic of videos given a set of video files'''
         # List video files
         init = True
@@ -58,7 +58,7 @@ class Annotator():
             print('\r', 'Loading file %s' % video_file, end=' ')
             
             # Deal with long lists
-            if vi == Nx*Ny:
+            if vi == self.Nx*self.Ny:
                 print('The list of videos doesn\'t fit in the mosaic.')
                 break
             
@@ -73,11 +73,11 @@ class Annotator():
                 if init:
                     fdim = frame.shape
                     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    mosaic = np.zeros((n_frames, fdim[0]*Ny, fdim[1]*Nx, 3))
+                    mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
                     i_scr = 0
                     j_scr = 0
                     k_time = 0
-                    mosaic_names = [[[] for _ in range(Nx)] for _ in range(Ny)]
+                    mosaic_names = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
                     init = False
                 
                 # Add video to the grid
@@ -96,7 +96,7 @@ class Annotator():
             
             # Increase the mosaic indices
             i_scr += 1
-            if i_scr == Ny:
+            if i_scr == self.Ny:
                 i_scr = 0
                 j_scr += 1
         
@@ -299,11 +299,11 @@ class Annotator():
         videos_list = self.find_videos(videos_folder, video_ext)
         
         # Calculate number of videos per row/col
-        Ny = int(np.sqrt(N_show_approx/screen_ratio))
-        Nx = int(np.sqrt(N_show_approx*screen_ratio))
+        self.Ny = int(np.sqrt(N_show_approx/screen_ratio))
+        self.Nx = int(np.sqrt(N_show_approx*screen_ratio))
         
         # Split the videos list into pages
-        self.video_pages = self.list_to_pages(videos_list, Nx, Ny)
+        self.video_pages = self.list_to_pages(videos_list)
         self.current_page = 0
         
 #        # Load status
@@ -338,8 +338,8 @@ class Annotator():
         run = True
         while run:
             # Get the mosaic for the current page
-            videos_in_page = [item['video'] for sublist in video_pages[self.current_page] for item in sublist]
-            mosaic, _ = self.create_mosaic(videos_in_page, Nx, Ny)
+            videos_in_page = [item['video'] for sublist in self.video_pages[self.current_page] for item in sublist]
+            mosaic, _ = self.create_mosaic(videos_in_page)
             
             # GUI loop
             run_this_page = True
