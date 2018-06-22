@@ -275,7 +275,7 @@ class Annotator():
         annotation_file = 'labels.json'
         status_file = 'status.json'
         video_ext = ['.mp4', '.avi']
-        N_per_time = 100
+        N_show_approx = 100
         screen_ratio = 16/9
         
         # Debug
@@ -285,8 +285,8 @@ class Annotator():
         videos_list = self.find_videos(videos_folder, video_ext)
         
         # Calculate number of videos per row/col
-        Ny = int(np.sqrt(N_per_time/screen_ratio))
-        Nx = int(np.sqrt(N_per_time*screen_ratio))
+        Ny = int(np.sqrt(N_show_approx/screen_ratio))
+        Nx = int(np.sqrt(N_show_approx*screen_ratio))
         N_per_time = Nx*Ny
         
         # Test mosaic
