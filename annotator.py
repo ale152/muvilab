@@ -189,23 +189,23 @@ class Annotator():
         
         # Split the videos list into pages
         self.video_pages = self.list_to_pages(videos_list)
-        self.current_page = 0
         
-#        # Load status
-#        if os.path.isfile(status_file):
-#            with open(status_file, 'r') as jsonFile:
-#                data = json.load(jsonFile)
-#    
-#            starting_day = data['day']
-#            starting_video = data['last_video']
-#            total_vid_ann = data['count']
-#            
-#            print('Status file found. Loading from day %s, video %s' %
-#                  (starting_day, starting_video))
-#        else:
-#            starting_day = None
-#            starting_video = None
-#            total_vid_ann = 0
+        # Load status
+        if os.path.isfile(status_file):
+            with open(status_file, 'r') as jsonFile:
+                data = json.load(jsonFile)
+            
+            # Load the status
+            status_time = data['time']
+            status_page = data['page']
+            print('Status file found at %s. Loading from page %d' %
+                  (status_time, status_page))
+            
+            # Set the status
+            self.current_page = status_page
+        else:
+            # Start from page zero
+            self.current_page = 0
 #            
 #        # Load existing annotations
 #        if os.path.isfile(annotation_file):
@@ -271,11 +271,13 @@ class Annotator():
 #        for self.batch, self.video_names, self.status in generator:
 
             
-#            # Save the status
-#            if self.debug_verbose == 1:
-#                print('Saving status...')
-#            with open(status_file, 'w+') as jsonFile:
-#                jsonFile.write(json.dumps(self.status, indent=1))
+            # Save the status
+            if self.debug_verbose == 1:
+                print('Saving status...')
+            with open(status_file, 'w+') as jsonFile:
+                status = {'time': time.time(),
+                          'page': self.current_page}
+                jsonFile.write(json.dumps(status, indent=1))
 #                
 #            # Backup of the annotations
 #            if self.debug_verbose == 1:
