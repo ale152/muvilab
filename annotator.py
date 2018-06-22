@@ -304,91 +304,109 @@ class Annotator():
         
         # Split the videos list into pages
         video_pages = self.list_to_pages(videos_list, Nx, Ny)
- 
-        # Load status
-        if os.path.isfile(status_file):
-            with open(status_file, 'r') as jsonFile:
-                data = json.load(jsonFile)
-    
-            starting_day = data['day']
-            starting_video = data['last_video']
-            total_vid_ann = data['count']
-            
-            print('Status file found. Loading from day %s, video %s' %
-                  (starting_day, starting_video))
-        else:
-            starting_day = None
-            starting_video = None
-            total_vid_ann = 0
-            
-        # Load existing annotations
-        if os.path.isfile(annotation_file):
-            with open(annotation_file, 'r') as jsonFile:
-                self.annotations = json.load(jsonFile)
-        else:
-            self.annotations = []
+        self.show_page = 0
+        
+#        # Load status
+#        if os.path.isfile(status_file):
+#            with open(status_file, 'r') as jsonFile:
+#                data = json.load(jsonFile)
+#    
+#            starting_day = data['day']
+#            starting_video = data['last_video']
+#            total_vid_ann = data['count']
+#            
+#            print('Status file found. Loading from day %s, video %s' %
+#                  (starting_day, starting_video))
+#        else:
+#            starting_day = None
+#            starting_video = None
+#            total_vid_ann = 0
+#            
+#        # Load existing annotations
+#        if os.path.isfile(annotation_file):
+#            with open(annotation_file, 'r') as jsonFile:
+#                self.annotations = json.load(jsonFile)
+#        else:
+#            self.annotations = []
         
         
         # Initialise the GUI
         cv2.namedWindow('sts_annotation')
         cv2.setMouseCallback('sts_annotation', self.click_callback)
-        self.rectangle = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
         
-        # Initialise the generator
-        generator = self.batch_generator(videos_folder, starting_day, starting_video, total_vid_ann)
-        # Loop over the pages generated
-        for self.batch, self.video_names, self.status in generator:
-
+        # Main loop
+        run = True
+        while run:
+            # Get the mosaic for the current page
+            videos_in_page = [item['video'] for sublist in video_pages[self.show_page] for item in sublist]
+            mosaic, _ = self.create_mosaic(videos_in_page, Nx, Ny)
+            
             # GUI loop
-            run = True
-            while run:
-                for f in range(self.batch.shape[0]):
-                    img = np.copy(self.batch[f, ...])
+            gui_run = True
+            while gui_run:
+                for f in range(mosaic.shape[0]):
+                    img = np.copy(mosaic[f, ...])
                     # Add rectangle to display selected sequence
-                    rec_list = [item for sublist in self.rectangle for item in sublist
-                                if item != []]
-                    for rec in rec_list:
-                        cv2.rectangle(img, rec['p1'], rec['p2'], rec['color'], 4)
-                        textpt = (rec['p1'][0]+10, rec['p1'][1]+15)
-                        cv2.putText(img, rec['label'], textpt, cv2.FONT_HERSHEY_SIMPLEX, 0.4, rec['color'])
+    #                rec_list = [item for sublist in self.rectangle for item in sublist
+    #                            if item != []]
+    #                for rec in rec_list:
+    #                    cv2.rectangle(img, rec['p1'], rec['p2'], rec['color'], 4)
+    #                    textpt = (rec['p1'][0]+10, rec['p1'][1]+15)
+    #                    cv2.putText(img, rec['label'], textpt, cv2.FONT_HERSHEY_SIMPLEX, 0.4, rec['color'])
                         
                     cv2.imshow('sts_annotation', img)
                     
                     key_input = cv2.waitKey(30)
                     if key_input == ord('n') or key_input == ord('N'):
-                            run = False
+                            self.show_page += 1
+                            gui_run = False
+                            break
+                        
+                    if key_input == ord('b') or key_input == ord('B'):
+                            self.show_page -= 1
+                            gui_run = False
                             break
                         
                     if key_input == ord('q') or key_input == ord('Q'):
                             run = None
+                            gui_run = False
                             break
-                
-            # Save the status
-            if self.debug_verbose == 1:
-                print('Saving status...')
-            with open(status_file, 'w+') as jsonFile:
-                jsonFile.write(json.dumps(self.status, indent=1))
-                
-            # Backup of the annotations
-            if self.debug_verbose == 1:
-                print('Backing up annotations...')
-            if os.path.isfile(annotation_file):
-                copyfile(annotation_file, annotation_file+'.backup')
-                
-            # Save the annotations
-            if self.debug_verbose == 1:
-                print('Saving annotations...')
-            with open(annotation_file, 'w+') as jsonFile:
-                jsonFile.write(json.dumps(self.annotations, indent=1))
-    
+            
+            
+        
+#        self.rectangle = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
+        
+        # Initialise the generator
+#        generator = self.batch_generator(videos_folder, starting_day, starting_video, total_vid_ann)
+        # Loop over the pages generated
+#        for self.batch, self.video_names, self.status in generator:
+
+            
+#            # Save the status
+#            if self.debug_verbose == 1:
+#                print('Saving status...')
+#            with open(status_file, 'w+') as jsonFile:
+#                jsonFile.write(json.dumps(self.status, indent=1))
+#                
+#            # Backup of the annotations
+#            if self.debug_verbose == 1:
+#                print('Backing up annotations...')
+#            if os.path.isfile(annotation_file):
+#                copyfile(annotation_file, annotation_file+'.backup')
+#                
+#            # Save the annotations
+#            if self.debug_verbose == 1:
+#                print('Saving annotations...')
+#            with open(annotation_file, 'w+') as jsonFile:
+#                jsonFile.write(json.dumps(self.annotations, indent=1))
+#    
             # Reset the rectangles
-            self.rectangle = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
+#            self.rectangle = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
             
             # Exit the program
             if run is None:
                 print('Quitting the program...')
                 cv2.destroyAllWindows()
-                del generator
                 return -1
 
            
