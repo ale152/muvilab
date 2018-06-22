@@ -34,6 +34,20 @@ class Annotator():
                     
         return videos_list
     
+    def list_to_pages(self, videos_list, Nx, Ny):
+        '''Split a list of videos into an array arranged by pages of mosaics'''
+        N_pages = int(np.ceil(len(videos_list)/Nx/Ny))
+        video_pages = [[[[] for _ in range(Nx)] for _ in range(Ny)] for _ in range(N_pages)]
+        vid = 0
+        for p in range(N_pages):
+            for i in range(Ny):
+                for j in range(Nx):
+                    video_pages[p][i][j] = {'video': videos_list[vid],
+                                            'label': ''}
+                    if vid == len(videos_list)-1:
+                        return video_pages
+                    else:
+                        vid += 1
 
     def create_mosaic(self, videos_list, Nx, Ny):
         '''This function create a mosaic of videos given a set of video files'''
@@ -287,11 +301,10 @@ class Annotator():
         # Calculate number of videos per row/col
         Ny = int(np.sqrt(N_show_approx/screen_ratio))
         Nx = int(np.sqrt(N_show_approx*screen_ratio))
-        N_per_time = Nx*Ny
         
-        # Test mosaic
-        mosaic, name = self.create_mosaic(videos_list[0:100], Nx, Ny)
-        
+        # Split the videos list into pages
+        video_pages = self.list_to_pages(videos_list, Nx, Ny)
+ 
         # Load status
         if os.path.isfile(status_file):
             with open(status_file, 'r') as jsonFile:
