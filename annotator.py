@@ -236,8 +236,8 @@ class Annotator():
                                'p2': ((j_click+1)*self.dim[1], (i_click+1)*self.dim[0]), 
                                'color': label_color, 'label': label_text}
              
-        # Create the label           
-        label = {'video': self.video_names[i_click][j_click],
+        # Create the label
+        self.video_pages[self.current_page][i_click][j_click]['label'] = label_text
                  'day': self.status['day'],
                  'label': label_text}
                     
@@ -303,8 +303,8 @@ class Annotator():
         Nx = int(np.sqrt(N_show_approx*screen_ratio))
         
         # Split the videos list into pages
-        video_pages = self.list_to_pages(videos_list, Nx, Ny)
-        self.show_page = 0
+        self.video_pages = self.list_to_pages(videos_list, Nx, Ny)
+        self.current_page = 0
         
 #        # Load status
 #        if os.path.isfile(status_file):
@@ -338,7 +338,7 @@ class Annotator():
         run = True
         while run:
             # Get the mosaic for the current page
-            videos_in_page = [item['video'] for sublist in video_pages[self.show_page] for item in sublist]
+            videos_in_page = [item['video'] for sublist in video_pages[self.current_page] for item in sublist]
             mosaic, _ = self.create_mosaic(videos_in_page, Nx, Ny)
             
             # GUI loop
@@ -358,12 +358,12 @@ class Annotator():
                     
                     key_input = cv2.waitKey(30)
                     if key_input == ord('n') or key_input == ord('N'):
-                            self.show_page += 1
+                            self.current_page += 1
                             gui_run = False
                             break
                         
                     if key_input == ord('b') or key_input == ord('B'):
-                            self.show_page -= 1
+                            self.current_page -= 1
                             gui_run = False
                             break
                         
