@@ -224,48 +224,49 @@ class Annotator():
     def set_label(self, label_text, label_color, x_click, y_click):
         '''Set a specific label based on the user click input'''
         # Find the indices of the clicked sequence
-        i_click = int(np.floor((y_click ) / self.batch.shape[1] * self.Ny))
-        j_click = int(np.floor((x_click ) / self.batch.shape[2] * self.Nx))
+        i_click = int(np.floor((y_click ) / self.mosaic_dim[1] * self.Ny))
+        j_click = int(np.floor((x_click ) / self.mosaic_dim[2] * self.Nx))
         
-        # Check empty for empty rectangle
-        if self.video_names[i_click][j_click] == []:
-            return -1
+#        # Check empty for empty rectangle
+#        if self.video_names[i_click][j_click] == []:
+#            return -1
         
         # Add rectangle to display selected sequence
-        self.rectangle[i_click][j_click] = {'p1': (j_click*self.dim[1], i_click*self.dim[0], ),
-                               'p2': ((j_click+1)*self.dim[1], (i_click+1)*self.dim[0]), 
-                               'color': label_color, 'label': label_text}
+#        self.rectangle[i_click][j_click] = {'p1': (j_click*self.dim[1], i_click*self.dim[0], ),
+#                               'p2': ((j_click+1)*self.dim[1], (i_click+1)*self.dim[0]), 
+#                               'color': label_color, 'label': label_text}
              
         # Create the label
         self.video_pages[self.current_page][i_click][j_click]['label'] = label_text
-                 'day': self.status['day'],
-                 'label': label_text}
-                    
-        # If the label already exist, update it
-        label_exist = [bf for bf in self.annotations if bf['video'] == self.video_names[i_click][j_click]]
-        if label_exist != []:
-            self.annotations[self.annotations.index(label_exist[0])] = label # TODO this is horrible
-            # Debug text
-            if self.debug_verbose:
-                print('Setting existing label (%d,%d) for file %s to %s' %
-                      (i_click, j_click, self.video_names[i_click][j_click],
-                       label_text))
-        else:
-            # Otherwise add it to the list
-            self.annotations.append(label)
-            
-            # Debug text
-            if self.debug_verbose:
-                print('Creating new label (%d,%d) for file %s to %s' %
-                      (i_click, j_click, self.video_names[i_click][j_click],
-                       label_text))
+#        label = {'video': self.video_names[i_click][j_click],
+#                 'day': self.status['day'],
+#                 'label': label_text}
+#                    
+#        # If the label already exist, update it
+#        label_exist = [bf for bf in self.annotations if bf['video'] == self.video_names[i_click][j_click]]
+#        if label_exist != []:
+#            self.annotations[self.annotations.index(label_exist[0])] = label # TODO this is horrible
+#            # Debug text
+#            if self.debug_verbose:
+#                print('Setting existing label (%d,%d) for file %s to %s' %
+#                      (i_click, j_click, self.video_names[i_click][j_click],
+#                       label_text))
+#        else:
+#            # Otherwise add it to the list
+#            self.annotations.append(label)
+#            
+#            # Debug text
+#            if self.debug_verbose:
+#                print('Creating new label (%d,%d) for file %s to %s' %
+#                      (i_click, j_click, self.video_names[i_click][j_click],
+#                       label_text))
 
 
     def remove_label(self, x_click, y_click):
         '''Remove label from the annotations'''
         # Find the indices of the clicked sequence
-        i_click = int(np.floor((y_click ) / self.batch.shape[1] * self.Ny))
-        j_click = int(np.floor((x_click ) / self.batch.shape[2] * self.Nx))
+        i_click = int(np.floor((y_click ) / self.mosaic_dim[1] * self.Ny))
+        j_click = int(np.floor((x_click ) / self.mosaic_dim[2] * self.Nx))
         
         # Remove rectangle
         self.rectangle[i_click][j_click] = []
@@ -340,6 +341,7 @@ class Annotator():
             # Get the mosaic for the current page
             videos_in_page = [item['video'] for sublist in self.video_pages[self.current_page] for item in sublist]
             mosaic, _ = self.create_mosaic(videos_in_page)
+            self.mosaic_dim = mosaic.shape
             
             # GUI loop
             run_this_page = True
