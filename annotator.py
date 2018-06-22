@@ -227,39 +227,11 @@ class Annotator():
         i_click = int(np.floor((y_click ) / self.mosaic_dim[1] * self.Ny))
         j_click = int(np.floor((x_click ) / self.mosaic_dim[2] * self.Nx))
         
-#        # Check empty for empty rectangle
-#        if self.video_names[i_click][j_click] == []:
-#            return -1
-        
-        # Add rectangle to display selected sequence
-#        self.rectangle[i_click][j_click] = {'p1': (j_click*self.dim[1], i_click*self.dim[0], ),
-#                               'p2': ((j_click+1)*self.dim[1], (i_click+1)*self.dim[0]), 
-#                               'color': label_color, 'label': label_text}
-             
         # Create the label
         self.video_pages[self.current_page][i_click][j_click]['label'] = label_text
-#        label = {'video': self.video_names[i_click][j_click],
-#                 'day': self.status['day'],
-#                 'label': label_text}
-#                    
-#        # If the label already exist, update it
-#        label_exist = [bf for bf in self.annotations if bf['video'] == self.video_names[i_click][j_click]]
-#        if label_exist != []:
-#            self.annotations[self.annotations.index(label_exist[0])] = label # TODO this is horrible
-#            # Debug text
-#            if self.debug_verbose:
-#                print('Setting existing label (%d,%d) for file %s to %s' %
-#                      (i_click, j_click, self.video_names[i_click][j_click],
-#                       label_text))
-#        else:
-#            # Otherwise add it to the list
-#            self.annotations.append(label)
-#            
-#            # Debug text
-#            if self.debug_verbose:
-#                print('Creating new label (%d,%d) for file %s to %s' %
-#                      (i_click, j_click, self.video_names[i_click][j_click],
-#                       label_text))
+        
+        # Update the rectangles
+        self.update_rectangles()
 
 
     def remove_label(self, x_click, y_click):
@@ -268,20 +240,28 @@ class Annotator():
         i_click = int(np.floor((y_click ) / self.mosaic_dim[1] * self.Ny))
         j_click = int(np.floor((x_click ) / self.mosaic_dim[2] * self.Nx))
         
-        # Remove rectangle
-        self.rectangle[i_click][j_click] = []
+        # Remove the label
+        self.video_pages[self.current_page][i_click][j_click]['label'] = ''
         
-        # If the label already exist, remove it
-        label_exist = [bf for bf in self.annotations if bf['video'] == self.video_names[i_click][j_click]]
-        if label_exist != []:
-            self.annotations.remove(label_exist[0])
-            
-            # Debug text
-            if self.debug_verbose:
-                print('Label %s removed' % label_exist[0])
-        # Debug text
-        elif self.debug_verbose:
-                print('No label removed')
+        # Update the rectangles
+        self.update_rectangles()
+
+
+    def update_rectangles(self):
+        '''Update the rectangles shown in the gui according to the labels'''
+        # Reset rectangles
+        self.rectangles = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
+        # Find the items labelled in the current page
+        for i in range(self.Ny):
+            for j in range(self.Nx):
+                if self.video_pages[self.current_page][i][j]['label'] != '':
+                    # Add the rectangle
+                    p1 = (j*self.frame_dim[1], i*self.frame_dim[0])
+                    p2 = ((j+1)*self.frame_dim[1], (i+1)*self.frame_dim[0])
+                    label_text = self.video_pages[self.current_page][i][j]['label']
+                    label_color = [bf['color'] for bf in self.labels if bf['name'] == label_text][0]
+                    self.rectangles[i][j] = {'p1': p1, 'p2': p2, 
+                                  'color': label_color, 'label': label_text}
 
 
     def main(self):
@@ -302,6 +282,12 @@ class Annotator():
         # Calculate number of videos per row/col
         self.Ny = int(np.sqrt(N_show_approx/screen_ratio))
         self.Nx = int(np.sqrt(N_show_approx*screen_ratio))
+        
+        # Calculate the video frame sizes
+        cap = cv2.VideoCapture(videos_list[0])
+        _, sample_frame = cap.read()
+        self.frame_dim = sample_frame.shape
+        cap.release()
         
         # Split the videos list into pages
         self.video_pages = self.list_to_pages(videos_list)
@@ -343,18 +329,21 @@ class Annotator():
             mosaic, _ = self.create_mosaic(videos_in_page)
             self.mosaic_dim = mosaic.shape
             
+            # Update the rectangles
+            self.update_rectangles()
+            
             # GUI loop
             run_this_page = True
             while run_this_page:
                 for f in range(mosaic.shape[0]):
                     img = np.copy(mosaic[f, ...])
                     # Add rectangle to display selected sequence
-    #                rec_list = [item for sublist in self.rectangle for item in sublist
-    #                            if item != []]
-    #                for rec in rec_list:
-    #                    cv2.rectangle(img, rec['p1'], rec['p2'], rec['color'], 4)
-    #                    textpt = (rec['p1'][0]+10, rec['p1'][1]+15)
-    #                    cv2.putText(img, rec['label'], textpt, cv2.FONT_HERSHEY_SIMPLEX, 0.4, rec['color'])
+                    rec_list = [item for sublist in self.rectangles for item in sublist
+                                if item != []]
+                    for rec in rec_list:
+                        cv2.rectangle(img, rec['p1'], rec['p2'], rec['color'], 4)
+                        textpt = (rec['p1'][0]+10, rec['p1'][1]+15)
+                        cv2.putText(img, rec['label'], textpt, cv2.FONT_HERSHEY_SIMPLEX, 0.4, rec['color'])
                         
                     cv2.imshow('sts_annotation', img)
                     
