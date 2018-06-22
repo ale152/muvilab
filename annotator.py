@@ -342,8 +342,8 @@ class Annotator():
             mosaic, _ = self.create_mosaic(videos_in_page, Nx, Ny)
             
             # GUI loop
-            gui_run = True
-            while gui_run:
+            run_this_page = True
+            while run_this_page:
                 for f in range(mosaic.shape[0]):
                     img = np.copy(mosaic[f, ...])
                     # Add rectangle to display selected sequence
@@ -359,17 +359,17 @@ class Annotator():
                     key_input = cv2.waitKey(30)
                     if key_input == ord('n') or key_input == ord('N'):
                             self.current_page += 1
-                            gui_run = False
+                            run_this_page = False
                             break
                         
                     if key_input == ord('b') or key_input == ord('B'):
                             self.current_page -= 1
-                            gui_run = False
+                            run_this_page = False
                             break
                         
                     if key_input == ord('q') or key_input == ord('Q'):
                             run = None
-                            gui_run = False
+                            run_this_page = False
                             break
             
             
