@@ -59,9 +59,11 @@ class Annotator:
     def create_mosaic(self, e_mosaic_ready, e_page_request):
         '''This function create a mosaic of videos given a set of video files'''
         run = True
+        page_to_load = self.current_page
+        pages_cached = 0
         while run:
             # List video files
-            videos_list = [item['video'] for sublist in self.video_pages[self.current_page] for item in sublist]
+            videos_list = [item['video'] for sublist in self.video_pages[page_to_load] for item in sublist]
             init = True
             # Loop over all the video files in the day folder
             for vi, video_file in enumerate(videos_list):
@@ -104,8 +106,8 @@ class Annotator:
                     i_scr = 0
                     j_scr += 1
                     
-                if self.debug_verbose == 1:
-                    print('Page %d was correctly loaded' % self.current_page)
+            if self.debug_verbose == 1:
+                print('Page %d was correctly loaded' % page_to_load)
                 
             # Tell the main function that the mosaic is ready
             if self.debug_verbose == 1:
@@ -113,14 +115,18 @@ class Annotator:
             e_mosaic_ready.set()
             
             # Load the next page #
+            page_to_load += 1
+            pages_cached += 1
             
-            # Wait
-            if self.debug_verbose == 1:
-                print('(Thread) create_mosaic goes now to standby...')
-    
-            e_page_request.clear()
-            e_page_request.wait()
-            print('(Thread) Main woke me up!')
+            # Wait after loading two pages
+            if pages_cached == 2:
+                if self.debug_verbose == 1:
+                    print('(Thread) create_mosaic goes now to standby...')
+                pages_cached = 0
+                e_page_request.clear()
+                e_page_request.wait()
+                
+            print('(Thread) Keep loading...')
 
     # Create the click callback
     def click_callback(self, event, x_click, y_click, flags, param):
