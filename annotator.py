@@ -259,8 +259,7 @@ class Annotator:
                 for f in range(mosaic.shape[0]):
                     img = np.copy(mosaic[f, ...])
                     # Add rectangle to display selected sequence
-                    rec_list = [item for sublist in self.rectangles for item in sublist
-                                if item != []]
+                    rec_list = [item for sublist in self.rectangles for item in sublist if item]
                     for rec in rec_list:
                         cv2.rectangle(img, rec['p1'], rec['p2'], rec['color'], 4)
                         textpt = (rec['p1'][0]+10, rec['p1'][1]+15)
