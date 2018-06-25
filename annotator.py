@@ -319,15 +319,15 @@ class Annotator():
 if __name__ == '__main__':
     annotator = Annotator([
                 {'name': 'walking', 
-                'color': (0, 200, 0),
+                'color': (0, 1, 0),
                 'event': cv2.EVENT_LBUTTONDOWN},
 
                 {'name': 'sitting', 
-                'color': (0, 0, 200),
+                'color': (0, 0, 1),
                 'event': cv2.EVENT_LBUTTONDBLCLK},
                  
                  {'name': 'standing', 
-                'color': (0, 140, 255),
+                'color': (0, 1, 1),
                 'event': cv2.EVENT_MBUTTONDOWN}
                 ])
 
