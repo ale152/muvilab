@@ -10,7 +10,7 @@ import cv2
 # TODO: Add check labels are changed
 # TODO: Add check video file is a video file
 
-class Annotator():
+class Annotator:
     '''Annotate multiple videos simultaneously by clicking on them. The current configuration
     requires the videos to be in subfolders located in "videos_folder". The algorithm will loop
     through the folders and load all the videos in them.
