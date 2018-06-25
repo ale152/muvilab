@@ -211,15 +211,21 @@ class Annotator():
         else:
             # Start from page zero
             self.current_page = 0
-#            
-#        # Load existing annotations
-#        if os.path.isfile(annotation_file):
-#            with open(annotation_file, 'r') as jsonFile:
-#                self.annotations = json.load(jsonFile)
-#        else:
-#            self.annotations = []
-        
-        
+            
+        # Load existing annotations
+        if os.path.isfile(annotation_file):
+            with open(annotation_file, 'r') as jsonFile:
+                existing_annotations = json.load(jsonFile)
+                
+            # Load the annotations into the video_pages array
+            for anno in existing_annotations:
+                # Find the right video to which apply the annotation
+                for page in self.video_pages:
+                    for sublist in page:
+                        for item in sublist:
+                            if item['video'] == anno['video']:
+                                item['label'] = anno['label']
+
         # Initialise the GUI
         cv2.namedWindow('sts_annotation')
         cv2.setMouseCallback('sts_annotation', self.click_callback)
@@ -266,16 +272,6 @@ class Annotator():
                             run_this_page = False
                             break
             
-            
-        
-#        self.rectangle = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
-        
-        # Initialise the generator
-#        generator = self.batch_generator(videos_folder, starting_day, starting_video, total_vid_ann)
-        # Loop over the pages generated
-#        for self.batch, self.video_names, self.status in generator:
-
-            
             # Save the status
             if self.debug_verbose == 1:
                 print('Saving status...')
@@ -283,21 +279,20 @@ class Annotator():
                 status = {'time': time.time(),
                           'page': self.current_page}
                 jsonFile.write(json.dumps(status, indent=1))
-#                
-#            # Backup of the annotations
-#            if self.debug_verbose == 1:
-#                print('Backing up annotations...')
-#            if os.path.isfile(annotation_file):
-#                copyfile(annotation_file, annotation_file+'.backup')
-#                
-#            # Save the annotations
-#            if self.debug_verbose == 1:
-#                print('Saving annotations...')
-#            with open(annotation_file, 'w+') as jsonFile:
-#                jsonFile.write(json.dumps(self.annotations, indent=1))
-#    
-            # Reset the rectangles
-#            self.rectangle = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
+
+            # Backup of the annotations
+            if self.debug_verbose == 1:
+                print('Backing up annotations...')
+            if os.path.isfile(annotation_file):
+                copyfile(annotation_file, annotation_file+'.backup')
+
+            # Save the annotations
+            if self.debug_verbose == 1:
+                print('Saving annotations...')
+            with open(annotation_file, 'w+') as jsonFile:
+                # Save non empty labels only
+                non_empty = [item for page in self.video_pages for sublist in page for item in sublist if item['label'] != '']
+                jsonFile.write(json.dumps(non_empty, indent=1))
             
             # Exit the program
             if run is None:
