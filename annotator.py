@@ -77,12 +77,12 @@ class Annotator:
                 if init:
                     fdim = frame.shape
                     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
+                    self.mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
                     i_scr, j_scr, k_time = 0, 0, 0
                     init = False
                 
                 # Add video to the grid
-                mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
+                self.mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
                              j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
                 
                 # When all the frames have been read
@@ -97,9 +97,6 @@ class Annotator:
             if i_scr == self.Ny:
                 i_scr = 0
                 j_scr += 1
-        
-        # Write some metadata to yield with the batch
-        return mosaic
                     
 
     # Create the click callback
@@ -241,8 +238,8 @@ class Annotator:
         while run:
             # Get the mosaic for the current page
             videos_in_page = [item['video'] for sublist in self.video_pages[self.current_page] for item in sublist]
-            mosaic = self.create_mosaic(videos_in_page)
-            self.mosaic_dim = mosaic.shape
+            self.create_mosaic(videos_in_page)
+            self.mosaic_dim = self.mosaic.shape
             
             # Update the rectangles
             self.update_rectangles()
@@ -252,8 +249,8 @@ class Annotator:
             # GUI loop
             run_this_page = True
             while run_this_page:
-                for f in range(mosaic.shape[0]):
-                    img = np.copy(mosaic[f, ...])
+                for f in range(self.mosaic.shape[0]):
+                    img = np.copy(self.mosaic[f, ...])
                     # Add rectangle to display selected sequence
                     rec_list = [item for sublist in self.rectangles for item in sublist if item]
                     for rec in rec_list:
@@ -262,7 +259,7 @@ class Annotator:
                         cv2.putText(img, rec['label'], textpt, cv2.FONT_HERSHEY_SIMPLEX, 0.4, rec['color'])
                     
                     # Add a timebar
-                    img = self.add_timebar(img, f/mosaic.shape[0])
+                    img = self.add_timebar(img, f/self.mosaic.shape[0])
                     
                     cv2.imshow('MuViDat', img)
                     
