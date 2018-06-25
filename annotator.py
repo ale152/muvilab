@@ -56,15 +56,21 @@ class Annotator:
         return video_pages
 
 
-    def create_mosaic(self, e_mosaic_ready, e_page_request):
-        '''This function loads videos and arrange them into a mosaic. The videos
-        are taken from self.video_pages, selecting self.current_page. The output
-        is saved into self.mosaic, which is shown by the GUI. This function is
-        run as a thread in parallel with main.'''
+    def mosaic_thread(self, e_mosaic_ready, e_page_request):
+        '''This function is a wrapper for create_mosaic that runs in a separate
+        thread with main. When cold_start is true, it loads an image, returns 
+        it to main, then load a new one in memory and finally wait. After this, 
+        cold_start is set to false and at each successive call the function 
+        simply returns the cached image, load the next one and waits.'''
         run = True
         cached_page = self.current_page
         cold_start = True
         while run:
+            # The cached_page will be equal to self.current_page with a cold 
+            # start, e self.current_page+1 if a page was already loaded. If
+            # the user request a previous page (i.e. self.current_page-1),
+            # the cached image should be discarded and a cold start should be
+            # done.
             if cached_page not in {self.current_page, self.current_page+1}:
                 if self.debug_verbose == 1:
                     print('The cached page (%d) is different from the one requested (%d)' % 
@@ -72,58 +78,16 @@ class Annotator:
                     print('Set cold_start to True')
                 cached_page = self.current_page
                 cold_start = True
-                
+            
+            # If cold_start is false, there already is an image in memory.
+            # give it to main() and load the next one
             if not cold_start:
                 # Set the mosaic to the last mosaic loaded
                 self.mosaic = current_mosaic
                 e_mosaic_ready.set()
                         
             # List video files
-            videos_list = [item['video'] for sublist in self.video_pages[cached_page] for item in sublist]
-            init = True
-            # Loop over all the video files in the day folder
-            for vi, video_file in enumerate(videos_list):
-                #print('\rLoading file %s' % video_file, end=' ')
-                
-                # Deal with long lists
-                if vi == self.Nx*self.Ny:
-                    print("The list of videos doesn't fit in the mosaic.")
-                    break
-                
-                # Open the video
-                cap = cv2.VideoCapture(video_file)
-                
-                # Load the video frames
-                while cap.isOpened():
-                    ret, frame = cap.read()
-                    
-                    # Initialise the video            
-                    if init:
-                        fdim = frame.shape
-                        n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                        current_mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
-                        i_scr, j_scr, k_time = 0, 0, 0
-                        init = False
-                    
-                    # Add video to the grid
-                    current_mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
-                                 j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
-                    
-                    # When all the frames have been read
-                    k_time += 1
-                    if k_time == n_frames:
-                        cap.release()
-                        k_time = 0
-                        break
-                
-                # Increase the mosaic indices
-                i_scr += 1
-                if i_scr == self.Ny:
-                    i_scr = 0
-                    j_scr += 1
-                    
-            if self.debug_verbose == 1:
-                print('Page %d was correctly loaded' % cached_page)
+            current_mosaic = self.create_mosaic(cached_page)
             
             # Load the next page #
             cached_page += 1
@@ -136,6 +100,58 @@ class Annotator:
                     print('(Thread) create_mosaic goes now to standby...')
                 e_page_request.clear()
                 e_page_request.wait()
+
+
+    def create_mosaic(self, page):
+        '''This function loads videos and arrange them into a mosaic. The videos
+        are taken from self.video_pages, the input argument page'''
+        videos_list = [item['video'] for sublist in self.video_pages[page] for item in sublist]
+        init = True
+        # Loop over all the video files in the day folder
+        for vi, video_file in enumerate(videos_list):
+            #print('\rLoading file %s' % video_file, end=' ')
+            
+            # Deal with long lists
+            if vi == self.Nx*self.Ny:
+                print("The list of videos doesn't fit in the mosaic.")
+                break
+            
+            # Open the video
+            cap = cv2.VideoCapture(video_file)
+            
+            # Load the video frames
+            while cap.isOpened():
+                ret, frame = cap.read()
+                
+                # Initialise the video            
+                if init:
+                    fdim = frame.shape
+                    n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    current_mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
+                    i_scr, j_scr, k_time = 0, 0, 0
+                    init = False
+                
+                # Add video to the grid
+                current_mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
+                             j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
+                
+                # When all the frames have been read
+                k_time += 1
+                if k_time == n_frames:
+                    cap.release()
+                    k_time = 0
+                    break
+            
+            # Increase the mosaic indices
+            i_scr += 1
+            if i_scr == self.Ny:
+                i_scr = 0
+                j_scr += 1
+                
+        if self.debug_verbose == 1:
+            print('Page %d was correctly loaded' % page)
+            
+        return current_mosaic
 
 
     # Create the click callback
@@ -275,11 +291,11 @@ class Annotator:
         # Initialise threading events
         e_mosaic_ready = threading.Event()
         e_page_request = threading.Event()
-        mosaic_thread = threading.Thread(target=self.create_mosaic, 
+        tr = threading.Thread(target=self.mosaic_thread, 
                                          args=(e_mosaic_ready, e_page_request))
         
         e_mosaic_ready.clear()
-        mosaic_thread.start()
+        tr.start()
 
         if self.debug_verbose == 1:
             print('(Main) Mosaic generator started in background, waiting for the mosaic...')
