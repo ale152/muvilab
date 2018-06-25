@@ -3,12 +3,15 @@
 import os
 import json
 import time
+import threading
 from shutil import copyfile
 import numpy as np
 import cv2
 
+# BUG: The time bar messes up with the click coordinates where the user clicks
 # TODO: Add check labels are changed
 # TODO: Add check video file is a video file
+# TODO: Add check for valid json files
 
 class Annotator:
     '''Annotate multiple videos simultaneously by clicking on them. The current configuration
@@ -53,52 +56,71 @@ class Annotator:
         return video_pages
 
 
-    def create_mosaic(self):
+    def create_mosaic(self, e_mosaic_ready, e_page_request):
         '''This function create a mosaic of videos given a set of video files'''
-        # List video files
-        videos_list = [item['video'] for sublist in self.video_pages[self.current_page] for item in sublist]
-        init = True
-        # Loop over all the video files in the day folder
-        for vi, video_file in enumerate(videos_list):
-            print('\rLoading file %s' % video_file, end=' ')
-            
-            # Deal with long lists
-            if vi == self.Nx*self.Ny:
-                print("The list of videos doesn't fit in the mosaic.")
-                break
-            
-            # Open the video
-            cap = cv2.VideoCapture(video_file)
-            
-            # Load the video frames
-            while cap.isOpened():
-                ret, frame = cap.read()
+        run = True
+        while run:
+            # List video files
+            videos_list = [item['video'] for sublist in self.video_pages[self.current_page] for item in sublist]
+            init = True
+            # Loop over all the video files in the day folder
+            for vi, video_file in enumerate(videos_list):
+                print('\rLoading file %s' % video_file, end=' ')
                 
-                # Initialise the video            
-                if init:
-                    fdim = frame.shape
-                    n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    self.mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
-                    i_scr, j_scr, k_time = 0, 0, 0
-                    init = False
-                
-                # Add video to the grid
-                self.mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
-                             j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
-                
-                # When all the frames have been read
-                k_time += 1
-                if k_time == n_frames:
-                    cap.release()
-                    k_time = 0
+                # Deal with long lists
+                if vi == self.Nx*self.Ny:
+                    print("The list of videos doesn't fit in the mosaic.")
                     break
-            
-            # Increase the mosaic indices
-            i_scr += 1
-            if i_scr == self.Ny:
-                i_scr = 0
-                j_scr += 1
+                
+                # Open the video
+                cap = cv2.VideoCapture(video_file)
+                
+                # Load the video frames
+                while cap.isOpened():
+                    ret, frame = cap.read()
                     
+                    # Initialise the video            
+                    if init:
+                        fdim = frame.shape
+                        n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                        self.mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
+                        i_scr, j_scr, k_time = 0, 0, 0
+                        init = False
+                    
+                    # Add video to the grid
+                    self.mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
+                                 j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
+                    
+                    # When all the frames have been read
+                    k_time += 1
+                    if k_time == n_frames:
+                        cap.release()
+                        k_time = 0
+                        break
+                
+                # Increase the mosaic indices
+                i_scr += 1
+                if i_scr == self.Ny:
+                    i_scr = 0
+                    j_scr += 1
+                    
+                if self.debug_verbose == 1:
+                    print('Page %d was correctly loaded' % self.current_page)
+                
+            # Tell the main function that the mosaic is ready
+            if self.debug_verbose == 1:
+                print('(Thread) The mosaic is ready...')
+            e_mosaic_ready.set()
+            
+            # Load the next page #
+            
+            # Wait
+            if self.debug_verbose == 1:
+                print('(Thread) create_mosaic goes now to standby...')
+    
+            e_page_request.clear()
+            e_page_request.wait()
+            print('(Thread) Main woke me up!')
 
     # Create the click callback
     def click_callback(self, event, x_click, y_click, flags, param):
@@ -173,7 +195,7 @@ class Annotator:
 
     def main(self):
         # Settings
-        videos_folder = r'./Videos'
+        videos_folder = r'G:\STS_sequences\Videos'
         annotation_file = 'labels.json'
         status_file = 'status.json'
         video_ext = ['.mp4', '.avi']
@@ -234,11 +256,29 @@ class Annotator:
         cv2.namedWindow('MuViDat')
         cv2.setMouseCallback('MuViDat', self.click_callback)
         
+        # Initialise threading events
+        e_mosaic_ready = threading.Event()
+        e_page_request = threading.Event()
+        mosaic_thread = threading.Thread(target=self.create_mosaic, 
+                                         args=(e_mosaic_ready, e_page_request))
+        
+        e_mosaic_ready.clear()
+        mosaic_thread.start()
+
+        if self.debug_verbose == 1:
+            print('(Main) Mosaic generator started in background, waiting for the mosaic...')
+        
         # Main loop
         run = True
         while run:
-            # Get the mosaic for the current page
-            self.create_mosaic()
+            # Wait for the mosaicto be generated
+            if self.debug_verbose == 1:
+                print('Main is waiting for the mosaic...')
+            e_mosaic_ready.wait()
+            
+            if self.debug_verbose == 1:
+                print('(Main) Mosaic received in the main loop')
+            
             self.mosaic_dim = self.mosaic.shape
             
             # Update the rectangles
@@ -284,6 +324,13 @@ class Annotator:
                             run = None
                             run_this_page = False
                             break
+            
+            # Ask the mosaic generator for the next page
+            if self.debug_verbose == 1:
+                print('(Main) New mosaic requested, waiting for it')
+            e_mosaic_ready.clear()
+            e_page_request.set()
+            e_mosaic_ready.wait()
             
             # Save the status
             if self.debug_verbose == 1:
