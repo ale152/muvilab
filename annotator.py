@@ -270,20 +270,24 @@ class Annotator:
                     
                     cv2.imshow('MuViDat', img)
                     
+                    # Deal with the keyboard input
                     key_input = cv2.waitKey(30)
-                    if key_input == ord('n') or key_input == ord('N'):
+                    if key_input == -1:
+                        continue
+                    
+                    if chr(key_input) in {'n', 'N'}:
                         if self.current_page < len(self.video_pages):
                             self.current_page += 1
                             run_this_page = False
                             break
                         
-                    if key_input == ord('b') or key_input == ord('B'):
+                    if chr(key_input) in {'b', 'B'}:
                             if self.current_page > 0:
                                 self.current_page -= 1
                                 run_this_page = False
                                 break
                         
-                    if key_input == ord('q') or key_input == ord('Q'):
+                    if chr(key_input) in {'q', 'Q'}:
                             run = None
                             run_this_page = False
                             break
