@@ -176,6 +176,7 @@ class Annotator:
         img = np.concatenate((bar, img, bar), axis=0)
         return img
 
+
     def main(self):
         # Settings
         videos_folder = r'./Videos'
@@ -206,8 +207,8 @@ class Annotator:
         
         # Load status
         if os.path.isfile(status_file):
-            with open(status_file, 'r') as jsonFile:
-                data = json.load(jsonFile)
+            with open(status_file, 'r') as json_file:
+                data = json.load(json_file)
             
             # Load the status
             status_time = data['time']
@@ -223,8 +224,8 @@ class Annotator:
             
         # Load existing annotations
         if os.path.isfile(annotation_file):
-            with open(annotation_file, 'r') as jsonFile:
-                existing_annotations = json.load(jsonFile)
+            with open(annotation_file, 'r') as json_file:
+                existing_annotations = json.load(json_file)
                 
             # Load the annotations into the video_pages array
             for anno in existing_annotations:
@@ -291,10 +292,10 @@ class Annotator:
             # Save the status
             if self.debug_verbose == 1:
                 print('Saving status...')
-            with open(status_file, 'w+') as jsonFile:
+            with open(status_file, 'w+') as json_file:
                 status = {'time': time.time(),
                           'page': self.current_page}
-                jsonFile.write(json.dumps(status, indent=1))
+                json_file.write(json.dumps(status, indent=1))
 
             # Backup of the annotations
             if self.debug_verbose == 1:
@@ -305,10 +306,10 @@ class Annotator:
             # Save the annotations
             if self.debug_verbose == 1:
                 print('Saving annotations...')
-            with open(annotation_file, 'w+') as jsonFile:
+            with open(annotation_file, 'w+') as json_file:
                 # Save non empty labels only
                 non_empty = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
-                jsonFile.write(json.dumps(non_empty, indent=1))
+                json_file.write(json.dumps(non_empty, indent=1))
             
             # Exit the program
             if run is None:
