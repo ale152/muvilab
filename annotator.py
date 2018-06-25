@@ -59,11 +59,11 @@ class Annotator:
         init = True
         # Loop over all the video files in the day folder
         for vi, video_file in enumerate(videos_list):
-            print('\r', 'Loading file %s' % video_file, end=' ')
+            print('\rLoading file %s' % video_file, end=' ')
             
             # Deal with long lists
             if vi == self.Nx*self.Ny:
-                print('The list of videos doesn\'t fit in the mosaic.')
+                print("The list of videos doesn't fit in the mosaic.")
                 break
             
             # Open the video
