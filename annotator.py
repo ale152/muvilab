@@ -8,6 +8,7 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
+# BUG: kill the background thread when quitting
 # BUG: The time bar messes up with the click coordinates where the user clicks
 # TODO: Review annotations
 # TODO: Add check labels are changed
@@ -169,11 +170,19 @@ class Annotator:
             self.remove_label(x_click, y_click)
 
 
+    def click_to_ij(self, x_click, y_click):
+        '''Convert the x-y coordinates of the mouse into i-j elements of the 
+        mosaic'''
+        i_click = int(np.floor((y_click) / self.mosaic_dim[1] * self.Ny))
+        j_click = int(np.floor((x_click) / self.mosaic_dim[2] * self.Nx))
+        i_click = np.min((np.max((0, i_click)), self.Ny-1))
+        j_click = np.min((np.max((0, j_click)), self.Nx-1))
+        return i_click, j_click
+
     def set_label(self, label_text, label_color, x_click, y_click):
         '''Set a specific label based on the user click input'''
         # Find the indices of the clicked sequence
-        i_click = int(np.floor((y_click ) / self.mosaic_dim[1] * self.Ny))
-        j_click = int(np.floor((x_click ) / self.mosaic_dim[2] * self.Nx))
+        i_click, j_click = self.click_to_ij(x_click, y_click)
         
         # Create the label
         self.video_pages[self.current_page][i_click][j_click]['label'] = label_text
@@ -185,8 +194,7 @@ class Annotator:
     def remove_label(self, x_click, y_click):
         '''Remove label from the annotations'''
         # Find the indices of the clicked sequence
-        i_click = int(np.floor((y_click ) / self.mosaic_dim[1] * self.Ny))
-        j_click = int(np.floor((x_click ) / self.mosaic_dim[2] * self.Nx))
+        i_click, j_click = self.click_to_ij(x_click, y_click)
         
         # Remove the label
         self.video_pages[self.current_page][i_click][j_click]['label'] = ''
