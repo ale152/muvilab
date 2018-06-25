@@ -340,6 +340,10 @@ class Annotator:
                     if key_input == -1:
                         continue
                     
+                    # Ignore user input until the next mosaic is ready
+                    if e_page_request.is_set():
+                        continue
+                    
                     if chr(key_input) in {'n', 'N'}:
                         if self.current_page < len(self.video_pages):
                             self.current_page += 1
