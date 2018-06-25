@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
-import cv2
 import os
 import json
-from shutil import copyfile
 import time
+from shutil import copyfile
+import numpy as np
+import cv2
 
 # TODO: Add check labels are changed
 # TODO: Add check video file is a video file
