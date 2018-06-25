@@ -227,8 +227,8 @@ class Annotator():
                                 item['label'] = anno['label']
 
         # Initialise the GUI
-        cv2.namedWindow('sts_annotation')
-        cv2.setMouseCallback('sts_annotation', self.click_callback)
+        cv2.namedWindow('MuViDat')
+        cv2.setMouseCallback('MuViDat', self.click_callback)
         
         # Main loop
         run = True
@@ -254,7 +254,7 @@ class Annotator():
                         textpt = (rec['p1'][0]+10, rec['p1'][1]+15)
                         cv2.putText(img, rec['label'], textpt, cv2.FONT_HERSHEY_SIMPLEX, 0.4, rec['color'])
                         
-                    cv2.imshow('sts_annotation', img)
+                    cv2.imshow('MuViDat', img)
                     
                     key_input = cv2.waitKey(30)
                     if key_input == ord('n') or key_input == ord('N'):
