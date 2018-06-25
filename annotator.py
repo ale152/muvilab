@@ -78,9 +78,7 @@ class Annotator:
                     fdim = frame.shape
                     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                     mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
-                    i_scr = 0
-                    j_scr = 0
-                    k_time = 0
+                    i_scr, j_scr, k_time = 0, 0, 0
                     mosaic_names = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
                     init = False
                 
