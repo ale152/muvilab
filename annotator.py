@@ -23,7 +23,6 @@ class Annotator:
     of requests.'''
 
     def __init__(self, labels):
-        # Set the labels
         self.labels = labels
 
     
