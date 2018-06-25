@@ -57,11 +57,19 @@ class Annotator:
 
 
     def create_mosaic(self, e_mosaic_ready, e_page_request):
-        '''This function create a mosaic of videos given a set of video files'''
+        '''This function loads videos and arrange them into a mosaic. The videos
+        are taken from self.video_pages, selecting self.current_page. The output
+        is saved into self.mosaic, which is shown by the GUI. This function is
+        run as a thread in parallel with main.'''
         run = True
         page_to_load = self.current_page
-        pages_cached = 0
+        first_run = True
         while run:
+            if not first_run:
+                # Set the mosaic to the last mosaic loaded
+                self.mosaic = current_mosaic
+                e_mosaic_ready.set()
+                        
             # List video files
             videos_list = [item['video'] for sublist in self.video_pages[page_to_load] for item in sublist]
             init = True
@@ -85,12 +93,12 @@ class Annotator:
                     if init:
                         fdim = frame.shape
                         n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                        self.mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
+                        current_mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
                         i_scr, j_scr, k_time = 0, 0, 0
                         init = False
                     
                     # Add video to the grid
-                    self.mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
+                    current_mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
                                  j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
                     
                     # When all the frames have been read
@@ -108,25 +116,19 @@ class Annotator:
                     
             if self.debug_verbose == 1:
                 print('Page %d was correctly loaded' % page_to_load)
-                
-            # Tell the main function that the mosaic is ready
-            if self.debug_verbose == 1:
-                print('(Thread) The mosaic is ready...')
-            e_mosaic_ready.set()
             
             # Load the next page #
             page_to_load += 1
-            pages_cached += 1
             
             # Wait after loading two pages
-            if pages_cached == 2:
+            if first_run:
+                first_run = False
+            else:
                 if self.debug_verbose == 1:
                     print('(Thread) create_mosaic goes now to standby...')
-                pages_cached = 0
                 e_page_request.clear()
                 e_page_request.wait()
-                
-            print('(Thread) Keep loading...')
+
 
     # Create the click callback
     def click_callback(self, event, x_click, y_click, flags, param):
