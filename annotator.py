@@ -79,15 +79,11 @@ class Annotator:
                     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                     mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
                     i_scr, j_scr, k_time = 0, 0, 0
-                    mosaic_names = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
                     init = False
                 
                 # Add video to the grid
                 mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
                              j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
-                             
-                # Save the file name
-                mosaic_names[i_scr][j_scr] = video_file
                 
                 # When all the frames have been read
                 k_time += 1
@@ -103,7 +99,7 @@ class Annotator:
                 j_scr += 1
         
         # Write some metadata to yield with the batch
-        return mosaic, mosaic_names
+        return mosaic
                     
 
     # Create the click callback
@@ -245,7 +241,7 @@ class Annotator:
         while run:
             # Get the mosaic for the current page
             videos_in_page = [item['video'] for sublist in self.video_pages[self.current_page] for item in sublist]
-            mosaic, _ = self.create_mosaic(videos_in_page)
+            mosaic = self.create_mosaic(videos_in_page)
             self.mosaic_dim = mosaic.shape
             
             # Update the rectangles
