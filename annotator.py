@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
-import cv2
 import os
 import json
-from shutil import copyfile
 import time
+from shutil import copyfile
+import numpy as np
+import cv2
 
 # TODO: Add check labels are changed
 # TODO: Add check video file is a video file
 
-class Annotator():
+class Annotator:
     '''Annotate multiple videos simultaneously by clicking on them. The current configuration
     requires the videos to be in subfolders located in "videos_folder". The algorithm will loop
     through the folders and load all the videos in them.
@@ -23,7 +23,6 @@ class Annotator():
     of requests.'''
 
     def __init__(self, labels):
-        # Set the labels
         self.labels = labels
 
     
@@ -37,26 +36,22 @@ class Annotator():
                     videos_list.append(os.path.join(folder, file))
                     
         return videos_list
+
     
     def list_to_pages(self, videos_list):
         '''Split a list of videos into an array arranged by pages of mosaics'''
         N_pages = int(np.ceil(len(videos_list)/self.Nx/self.Ny))
-        video_pages = [[[[] for _ in range(self.Nx)] for _ in range(self.Ny)] for _ in range(N_pages)]
+        video_pages = [[[{'video': '', 'label': ''} for _ in range(self.Nx)] for _ in range(self.Ny)] for _ in range(N_pages)]
         vid = 0
         for p in range(N_pages):
             for i in range(self.Ny):
                 for j in range(self.Nx):
                     if vid < len(videos_list):
-                        video_pages[p][i][j] = {'video': videos_list[vid],
-                                            'label': ''}
-                    else:
-                        video_pages[p][i][j] = {'video': '',
-                                            'label': ''}
-                    # Increment the index even when the list is full, to
-                    # initialise the entire array as a dictionary
-                    vid += 1
+                        video_pages[p][i][j]['video'] = videos_list[vid]
+                        vid += 1
         
         return video_pages
+
 
     def create_mosaic(self, videos_list):
         '''This function create a mosaic of videos given a set of video files'''
@@ -64,18 +59,18 @@ class Annotator():
         init = True
         # Loop over all the video files in the day folder
         for vi, video_file in enumerate(videos_list):
-            print('\r', 'Loading file %s' % video_file, end=' ')
+            print('\rLoading file %s' % video_file, end=' ')
             
             # Deal with long lists
             if vi == self.Nx*self.Ny:
-                print('The list of videos doesn\'t fit in the mosaic.')
+                print("The list of videos doesn't fit in the mosaic.")
                 break
             
             # Open the video
             cap = cv2.VideoCapture(video_file)
             
             # Load the video frames
-            while(cap.isOpened()):
+            while cap.isOpened():
                 ret, frame = cap.read()
                 
                 # Initialise the video            
@@ -83,9 +78,7 @@ class Annotator():
                     fdim = frame.shape
                     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                     mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
-                    i_scr = 0
-                    j_scr = 0
-                    k_time = 0
+                    i_scr, j_scr, k_time = 0, 0, 0
                     mosaic_names = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
                     init = False
                 
@@ -161,14 +154,16 @@ class Annotator():
         # Find the items labelled in the current page
         for i in range(self.Ny):
             for j in range(self.Nx):
-                if self.video_pages[self.current_page][i][j]['label']:
-                    # Add the rectangle
-                    p1 = (j*self.frame_dim[1], i*self.frame_dim[0])
-                    p2 = ((j+1)*self.frame_dim[1], (i+1)*self.frame_dim[0])
-                    label_text = self.video_pages[self.current_page][i][j]['label']
-                    label_color = [bf['color'] for bf in self.labels if bf['name'] == label_text][0]
-                    self.rectangles[i][j] = {'p1': p1, 'p2': p2, 
-                                  'color': label_color, 'label': label_text}
+                if not self.video_pages[self.current_page][i][j]['label']:
+                    continue
+            
+                # Add the rectangle
+                p1 = (j*self.frame_dim[1], i*self.frame_dim[0])
+                p2 = ((j+1)*self.frame_dim[1], (i+1)*self.frame_dim[0])
+                label_text = self.video_pages[self.current_page][i][j]['label']
+                label_color = [bf['color'] for bf in self.labels if bf['name'] == label_text][0]
+                self.rectangles[i][j] = {'p1': p1, 'p2': p2, 
+                              'color': label_color, 'label': label_text}
 
     
     def add_timebar(self, img, fraction, color=(0.2, 0.5, 1)):
@@ -180,6 +175,7 @@ class Annotator():
         bar[:, 0:idt, 2] = color[2]
         img = np.concatenate((bar, img, bar), axis=0)
         return img
+
 
     def main(self):
         # Settings
@@ -211,8 +207,8 @@ class Annotator():
         
         # Load status
         if os.path.isfile(status_file):
-            with open(status_file, 'r') as jsonFile:
-                data = json.load(jsonFile)
+            with open(status_file, 'r') as json_file:
+                data = json.load(json_file)
             
             # Load the status
             status_time = data['time']
@@ -228,8 +224,8 @@ class Annotator():
             
         # Load existing annotations
         if os.path.isfile(annotation_file):
-            with open(annotation_file, 'r') as jsonFile:
-                existing_annotations = json.load(jsonFile)
+            with open(annotation_file, 'r') as json_file:
+                existing_annotations = json.load(json_file)
                 
             # Load the annotations into the video_pages array
             for anno in existing_annotations:
@@ -263,8 +259,7 @@ class Annotator():
                 for f in range(mosaic.shape[0]):
                     img = np.copy(mosaic[f, ...])
                     # Add rectangle to display selected sequence
-                    rec_list = [item for sublist in self.rectangles for item in sublist
-                                if item != []]
+                    rec_list = [item for sublist in self.rectangles for item in sublist if item]
                     for rec in rec_list:
                         cv2.rectangle(img, rec['p1'], rec['p2'], rec['color'], 4)
                         textpt = (rec['p1'][0]+10, rec['p1'][1]+15)
@@ -275,20 +270,24 @@ class Annotator():
                     
                     cv2.imshow('MuViDat', img)
                     
+                    # Deal with the keyboard input
                     key_input = cv2.waitKey(30)
-                    if key_input == ord('n') or key_input == ord('N'):
+                    if key_input == -1:
+                        continue
+                    
+                    if chr(key_input) in {'n', 'N'}:
                         if self.current_page < len(self.video_pages):
                             self.current_page += 1
                             run_this_page = False
                             break
                         
-                    if key_input == ord('b') or key_input == ord('B'):
+                    if chr(key_input) in {'b', 'B'}:
                             if self.current_page > 0:
                                 self.current_page -= 1
                                 run_this_page = False
                                 break
                         
-                    if key_input == ord('q') or key_input == ord('Q'):
+                    if chr(key_input) in {'q', 'Q'}:
                             run = None
                             run_this_page = False
                             break
@@ -296,10 +295,10 @@ class Annotator():
             # Save the status
             if self.debug_verbose == 1:
                 print('Saving status...')
-            with open(status_file, 'w+') as jsonFile:
+            with open(status_file, 'w+') as json_file:
                 status = {'time': time.time(),
                           'page': self.current_page}
-                jsonFile.write(json.dumps(status, indent=1))
+                json_file.write(json.dumps(status, indent=1))
 
             # Backup of the annotations
             if self.debug_verbose == 1:
@@ -310,10 +309,10 @@ class Annotator():
             # Save the annotations
             if self.debug_verbose == 1:
                 print('Saving annotations...')
-            with open(annotation_file, 'w+') as jsonFile:
+            with open(annotation_file, 'w+') as json_file:
                 # Save non empty labels only
                 non_empty = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
-                jsonFile.write(json.dumps(non_empty, indent=1))
+                json_file.write(json.dumps(non_empty, indent=1))
             
             # Exit the program
             if run is None:
