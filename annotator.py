@@ -42,12 +42,17 @@ class Annotator():
         for p in range(N_pages):
             for i in range(self.Ny):
                 for j in range(self.Nx):
-                    video_pages[p][i][j] = {'video': videos_list[vid],
+                    if vid < len(videos_list):
+                        video_pages[p][i][j] = {'video': videos_list[vid],
                                             'label': ''}
-                    if vid == len(videos_list)-1:
-                        return video_pages
                     else:
-                        vid += 1
+                        video_pages[p][i][j] = {'video': '',
+                                            'label': ''}
+                    # Increment the index even when the list is full, to
+                    # initialise the entire array as a dictionary
+                    vid += 1
+        
+        return video_pages
 
     def create_mosaic(self, videos_list):
         '''This function create a mosaic of videos given a set of video files'''
