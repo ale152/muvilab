@@ -9,6 +9,7 @@ import numpy as np
 import cv2
 
 # BUG: The time bar messes up with the click coordinates where the user clicks
+# TODO: Review annotations
 # TODO: Add check labels are changed
 # TODO: Add check video file is a video file
 # TODO: Add check for valid json files
@@ -73,9 +74,8 @@ class Annotator:
             # done.
             if cached_page not in {self.current_page, self.current_page+1}:
                 if self.debug_verbose == 1:
-                    print('The cached page (%d) is different from the one requested (%d)' % 
-                          (cached_page, self.current_page))
-                    print('Set cold_start to True')
+                    print('(Thread) The cached page (%d) is different from the one requested (%d)' % 
+                          (cached_page-1, self.current_page))
                 cached_page = self.current_page
                 cold_start = True
             
@@ -97,7 +97,7 @@ class Annotator:
                 cold_start = False
             else:
                 if self.debug_verbose == 1:
-                    print('(Thread) create_mosaic goes now to standby...')
+                    print('(Thread) In standby...')
                 e_page_request.clear()
                 e_page_request.wait()
 
@@ -149,7 +149,7 @@ class Annotator:
                 j_scr += 1
                 
         if self.debug_verbose == 1:
-            print('Page %d was correctly loaded' % page)
+            print('(Thread) Page %d was correctly loaded' % page)
             
         return current_mosaic
 
@@ -303,7 +303,7 @@ class Annotator:
         # Main loop
         run = True
         while run:
-            # Wait for the mosaicto be generated
+            # Wait for the mosaic to be generated
             if self.debug_verbose == 1:
                 print('Main is waiting for the mosaic...')
             e_mosaic_ready.wait()
