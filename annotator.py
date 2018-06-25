@@ -157,7 +157,7 @@ class Annotator():
         # Find the items labelled in the current page
         for i in range(self.Ny):
             for j in range(self.Nx):
-                if self.video_pages[self.current_page][i][j]['label'] != '':
+                if self.video_pages[self.current_page][i][j]['label']:
                     # Add the rectangle
                     p1 = (j*self.frame_dim[1], i*self.frame_dim[0])
                     p2 = ((j+1)*self.frame_dim[1], (i+1)*self.frame_dim[0])
@@ -251,6 +251,8 @@ class Annotator():
             # Update the rectangles
             self.update_rectangles()
             
+            print('Showing page %d of %d' % (self.current_page, len(self.video_pages)))
+            
             # GUI loop
             run_this_page = True
             while run_this_page:
@@ -306,7 +308,7 @@ class Annotator():
                 print('Saving annotations...')
             with open(annotation_file, 'w+') as jsonFile:
                 # Save non empty labels only
-                non_empty = [item for page in self.video_pages for sublist in page for item in sublist if item['label'] != '']
+                non_empty = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
                 jsonFile.write(json.dumps(non_empty, indent=1))
             
             # Exit the program
