@@ -5,6 +5,10 @@ import cv2
 import os
 import json
 from shutil import copyfile
+import time
+
+# TODO: Add check labels are changed
+# TODO: Add check video file is a video file
 
 class Annotator():
     '''Annotate multiple videos simultaneously by clicking on them. The current configuration
