@@ -183,7 +183,7 @@ class Annotator():
 
     def main(self):
         # Settings
-        videos_folder = r'G:\Videos'
+        videos_folder = r'./Videos'
         annotation_file = 'labels.json'
         status_file = 'status.json'
         video_ext = ['.mp4', '.avi']
