@@ -154,14 +154,16 @@ class Annotator:
         # Find the items labelled in the current page
         for i in range(self.Ny):
             for j in range(self.Nx):
-                if self.video_pages[self.current_page][i][j]['label']:
-                    # Add the rectangle
-                    p1 = (j*self.frame_dim[1], i*self.frame_dim[0])
-                    p2 = ((j+1)*self.frame_dim[1], (i+1)*self.frame_dim[0])
-                    label_text = self.video_pages[self.current_page][i][j]['label']
-                    label_color = [bf['color'] for bf in self.labels if bf['name'] == label_text][0]
-                    self.rectangles[i][j] = {'p1': p1, 'p2': p2, 
-                                  'color': label_color, 'label': label_text}
+                if not self.video_pages[self.current_page][i][j]['label']:
+                    continue
+            
+                # Add the rectangle
+                p1 = (j*self.frame_dim[1], i*self.frame_dim[0])
+                p2 = ((j+1)*self.frame_dim[1], (i+1)*self.frame_dim[0])
+                label_text = self.video_pages[self.current_page][i][j]['label']
+                label_color = [bf['color'] for bf in self.labels if bf['name'] == label_text][0]
+                self.rectangles[i][j] = {'p1': p1, 'p2': p2, 
+                              'color': label_color, 'label': label_text}
 
     
     def add_timebar(self, img, fraction, color=(0.2, 0.5, 1)):
