@@ -166,6 +166,16 @@ class Annotator():
                     self.rectangles[i][j] = {'p1': p1, 'p2': p2, 
                                   'color': label_color, 'label': label_text}
 
+    
+    def add_timebar(self, img, fraction, color=(0.2, 0.5, 1)):
+        '''Add a timebar on the image'''
+        bar = np.zeros((20, img.shape[1], 3))
+        idt = int(fraction*img.shape[1])
+        bar[:, 0:idt, 0] = color[0]
+        bar[:, 0:idt, 1] = color[1]
+        bar[:, 0:idt, 2] = color[2]
+        img = np.concatenate((bar, img, bar), axis=0)
+        return img
 
     def main(self):
         # Settings
@@ -253,7 +263,10 @@ class Annotator():
                         cv2.rectangle(img, rec['p1'], rec['p2'], rec['color'], 4)
                         textpt = (rec['p1'][0]+10, rec['p1'][1]+15)
                         cv2.putText(img, rec['label'], textpt, cv2.FONT_HERSHEY_SIMPLEX, 0.4, rec['color'])
-                        
+                    
+                    # Add a timebar
+                    img = self.add_timebar(img, f/mosaic.shape[0])
+                    
                     cv2.imshow('MuViDat', img)
                     
                     key_input = cv2.waitKey(30)
