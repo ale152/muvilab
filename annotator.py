@@ -36,26 +36,22 @@ class Annotator:
                     videos_list.append(os.path.join(folder, file))
                     
         return videos_list
+
     
     def list_to_pages(self, videos_list):
         '''Split a list of videos into an array arranged by pages of mosaics'''
         N_pages = int(np.ceil(len(videos_list)/self.Nx/self.Ny))
-        video_pages = [[[[] for _ in range(self.Nx)] for _ in range(self.Ny)] for _ in range(N_pages)]
+        video_pages = [[[{'video': '', 'label': ''} for _ in range(self.Nx)] for _ in range(self.Ny)] for _ in range(N_pages)]
         vid = 0
         for p in range(N_pages):
             for i in range(self.Ny):
                 for j in range(self.Nx):
                     if vid < len(videos_list):
-                        video_pages[p][i][j] = {'video': videos_list[vid],
-                                            'label': ''}
-                    else:
-                        video_pages[p][i][j] = {'video': '',
-                                            'label': ''}
-                    # Increment the index even when the list is full, to
-                    # initialise the entire array as a dictionary
-                    vid += 1
+                        video_pages[p][i][j]['video'] = videos_list[vid]
+                        vid += 1
         
         return video_pages
+
 
     def create_mosaic(self, videos_list):
         '''This function create a mosaic of videos given a set of video files'''
