@@ -70,7 +70,7 @@ class Annotator:
             cap = cv2.VideoCapture(video_file)
             
             # Load the video frames
-            while(cap.isOpened()):
+            while cap.isOpened():
                 ret, frame = cap.read()
                 
                 # Initialise the video            
