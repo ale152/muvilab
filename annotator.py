@@ -62,20 +62,28 @@ class Annotator:
         is saved into self.mosaic, which is shown by the GUI. This function is
         run as a thread in parallel with main.'''
         run = True
-        page_to_load = self.current_page
-        first_run = True
+        cached_page = self.current_page
+        cold_start = True
         while run:
-            if not first_run:
+            if cached_page not in {self.current_page, self.current_page+1}:
+                if self.debug_verbose == 1:
+                    print('The cached page (%d) is different from the one requested (%d)' % 
+                          (cached_page, self.current_page))
+                    print('Set cold_start to True')
+                cached_page = self.current_page
+                cold_start = True
+                
+            if not cold_start:
                 # Set the mosaic to the last mosaic loaded
                 self.mosaic = current_mosaic
                 e_mosaic_ready.set()
                         
             # List video files
-            videos_list = [item['video'] for sublist in self.video_pages[page_to_load] for item in sublist]
+            videos_list = [item['video'] for sublist in self.video_pages[cached_page] for item in sublist]
             init = True
             # Loop over all the video files in the day folder
             for vi, video_file in enumerate(videos_list):
-                print('\rLoading file %s' % video_file, end=' ')
+                #print('\rLoading file %s' % video_file, end=' ')
                 
                 # Deal with long lists
                 if vi == self.Nx*self.Ny:
@@ -115,14 +123,14 @@ class Annotator:
                     j_scr += 1
                     
             if self.debug_verbose == 1:
-                print('Page %d was correctly loaded' % page_to_load)
+                print('Page %d was correctly loaded' % cached_page)
             
             # Load the next page #
-            page_to_load += 1
+            cached_page += 1
             
             # Wait after loading two pages
-            if first_run:
-                first_run = False
+            if cold_start:
+                cold_start = False
             else:
                 if self.debug_verbose == 1:
                     print('(Thread) create_mosaic goes now to standby...')
