@@ -53,9 +53,10 @@ class Annotator:
         return video_pages
 
 
-    def create_mosaic(self, videos_list):
+    def create_mosaic(self):
         '''This function create a mosaic of videos given a set of video files'''
         # List video files
+        videos_list = [item['video'] for sublist in self.video_pages[self.current_page] for item in sublist]
         init = True
         # Loop over all the video files in the day folder
         for vi, video_file in enumerate(videos_list):
@@ -237,8 +238,7 @@ class Annotator:
         run = True
         while run:
             # Get the mosaic for the current page
-            videos_in_page = [item['video'] for sublist in self.video_pages[self.current_page] for item in sublist]
-            self.create_mosaic(videos_in_page)
+            self.create_mosaic()
             self.mosaic_dim = self.mosaic.shape
             
             # Update the rectangles
