@@ -368,6 +368,11 @@ class Annotator:
                             run = None
                             run_this_page = False
                             break
+                        
+                    if chr(key_input) in {'r', 'R'}:
+                            run = None
+                            run_this_page = False
+                            break
             
             # Ask the mosaic generator for the next page
             if self.debug_verbose == 1:
