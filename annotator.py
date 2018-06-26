@@ -109,7 +109,8 @@ class Annotator:
             current_mosaic = self.create_mosaic(cached_page)
             
             # Load the next page #
-            cached_page += 1
+            if cached_page < len(self.video_pages)-1:
+                cached_page += 1
             
             # Wait after loading two pages
             if cold_start:
