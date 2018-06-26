@@ -278,6 +278,8 @@ class Annotator:
         if os.path.isfile(annotation_file):
             with open(annotation_file, 'r') as json_file:
                 existing_annotations = json.load(json_file)
+        else:
+            existing_annotations = []
         # Split the videos list into pages
         self.video_pages = self.list_to_pages(videos_list, existing_annotations)
         
