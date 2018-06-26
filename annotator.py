@@ -363,7 +363,7 @@ class Annotator:
                         continue
                     
                     if chr(key_input) in {'n', 'N'}:
-                        if self.current_page < len(self.video_pages):
+                        if self.current_page < len(self.video_pages)-1:
                             self.current_page += 1
                             run_this_page = False
                             break
