@@ -77,42 +77,32 @@ class Annotator:
         cold_start is set to false and at each successive call the function 
         simply returns the cached image, load the next one and waits.'''
         e_thread_off.clear()
-        cached_page = self.current_page
         cold_start = True
         while self.run_thread:
-            # The cached_page will be equal to self.current_page with a cold 
-            # start, e self.current_page+1 if a page was already loaded. If
-            # the user request a previous page (i.e. self.current_page-1),
-            # the cached image should be discarded and a cold start should be
-            # done.
-            if cached_page not in {self.current_page, self.current_page+1}:
-                if self.debug_verbose == 1:
-                    print('(Thread) The cached page (%d) is different from the one requested (%d)' % 
-                          (cached_page-1, self.current_page))
-                cached_page = self.current_page
-                cold_start = True
-            
-            # If cold_start is false, there already is an image in memory.
-            # give it to main() and load the next one
-            if not cold_start:
-                # Set the mosaic to the last mosaic loaded
+            # A cold_start is when no images are in memory. Simply load the current page
+            if cold_start:
+                # Get the mosaic of the current page
+                current_mosaic = self.create_mosairc(self.current_page)
+                page_in_cache = self.current_page
+                cold_start = False
+
+            # If the page in cache is the page requested, show it
+            if page_in_cache == self.current_page:
                 self.mosaic = current_mosaic
                 e_mosaic_ready.set()
-                        
-            # List video files
-            current_mosaic = self.create_mosaic(cached_page)
             
-            # Load the next page #
-            if cached_page < len(self.video_pages)-1:
-                cached_page += 1
+                # Load the next mosaic
+                next_page = self.current_page+self.page_direction
+                next_page = np.max((0, np.min((next_page, len(self.video_pages)-1))))
+                # Only load the next page if it's different from the current one
+                if next_page != self.current_page:
+                    current_mosaic = self.create_mosaic(next_page)
+                    page_in_cache = next_page
             
-            # Wait after loading two pages
-            if cold_start:
-                cold_start = False
-            else:
-                if self.debug_verbose == 1:
-                    print('(Thread) In standby...')
+                # Wait for the next page request
                 e_page_request.wait()
+            else:
+                cold_start = True
         
         if self.debug_verbose == 1:
             print('(Thread) The thread is dying now :(') 
@@ -167,7 +157,7 @@ class Annotator:
                 j_scr += 1
                 
         if self.debug_verbose == 1:
-            print('(Thread) Page %d was correctly loaded' % page)
+            print('(Thread) Mosaic for page %d was correctly created' % page)
             
         return current_mosaic
 
@@ -301,6 +291,8 @@ class Annotator:
             # Start from page zero
             self.current_page = 0
  
+        # Page direction (used for the cache)
+        self.page_direction = +1
 
         # Initialise the GUI
         cv2.namedWindow('MuViDat')
@@ -367,12 +359,14 @@ class Annotator:
                     if chr(key_input) in {'n', 'N'}:
                         if self.current_page < len(self.video_pages)-1:
                             self.current_page += 1
+                            self.page_direction = +1
                             run_this_page = False
                             break
                         
                     if chr(key_input) in {'b', 'B'}:
                             if self.current_page > 0:
                                 self.current_page -= 1
+                                self.page_direction = -1
                                 run_this_page = False
                                 break
                         
@@ -384,21 +378,24 @@ class Annotator:
                     if chr(key_input) in {'r', 'R'}:
                         existing_annotations = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
                         self.video_pages = self.list_to_pages(videos_list, existing_annotations, filter_label=True)
-                        # Shut down the thread
-                        self.run_thread = False
-                        e_page_request.set()
-                        e_thread_off.wait()
-                        # Restart the thread and request page 0
-                        self.run_thread = True
+#                        # Shut down the thread
+#                        self.run_thread = False
+#                        e_page_request.set()
+#                        e_thread_off.wait()
+#                        # Restart the thread and request page 0
+#                        self.run_thread = True
                         self.current_page = 0
-                        e_mosaic_ready.clear()
-                        e_page_request.set()
-                        tr = threading.Thread(target=self.mosaic_thread, 
-                                         args=(e_mosaic_ready, e_page_request,
-                                               e_thread_off))
-                        tr.start()
+                        self.page_direction = -1
+#                        e_mosaic_ready.clear()
+#                        e_page_request.set()
+#                        tr = threading.Thread(target=self.mosaic_thread, 
+#                                         args=(e_mosaic_ready, e_page_request,
+#                                               e_thread_off))
+#                        tr.start()
                         run_this_page = False
                         self.review_mode = True
+#                        e_mosaic_ready.wait()  # Wait for the mosaic
+#                        e_page_request.clear()  # Tell the thread to wait for a page request
                         break
             
             # Save the status
