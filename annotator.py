@@ -8,11 +8,9 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
-# BUG: error when showing the last page
-# BUG: kill the background thread when quitting
 # BUG: The time bar messes up with the click coordinates where the user clicks
-# TODO: Review annotations
 # TODO: Add check labels are changed
+# TODO: Add check have different filenames
 # TODO: Add check video file is a video file
 # TODO: Add check for valid json files
 
@@ -268,13 +266,15 @@ class Annotator:
         if os.path.isfile(annotation_file):
             with open(annotation_file, 'r') as json_file:
                 existing_annotations = json.load(json_file)
+            print('Existing annotation found: %d items loaded' % len(existing_annotations))
         else:
+            print('No annotation found at %s' % annotation_file)
             existing_annotations = []
         # Split the videos list into pages
         self.video_pages = self.list_to_pages(videos_list, existing_annotations)
         
         # Load status
-        self.review_mode = False
+        self.review_mode = False  # In review mode, the status is not saved
         if os.path.isfile(status_file):
             with open(status_file, 'r') as json_file:
                 data = json.load(json_file)
@@ -298,15 +298,15 @@ class Annotator:
         cv2.namedWindow('MuViDat')
         cv2.setMouseCallback('MuViDat', self.click_callback)
         
-        # Initialise threading events
-        e_mosaic_ready = threading.Event()
-        e_page_request = threading.Event()
-        e_thread_off = threading.Event()
+        # Define events and thread
+        e_mosaic_ready = threading.Event()  # Tells the main when the mosaic is ready to be shown
+        e_page_request = threading.Event()  # Tells the thread that a new mosaic has been requested
+        e_thread_off = threading.Event()  # Tells the main that the thread is done
         self.run_thread = True
         tr = threading.Thread(target=self.mosaic_thread, 
-                                         args=(e_mosaic_ready, e_page_request,
-                                               e_thread_off))
-        
+                              args=(e_mosaic_ready, e_page_request,
+                                    e_thread_off))
+        # Initialise the events
         e_mosaic_ready.clear()
         e_page_request.set()
         tr.start()
@@ -376,26 +376,12 @@ class Annotator:
                         break
                         
                     if chr(key_input) in {'r', 'R'}:
+                        # Update self.video_pages using labelled data only
                         existing_annotations = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
                         self.video_pages = self.list_to_pages(videos_list, existing_annotations, filter_label=True)
-#                        # Shut down the thread
-#                        self.run_thread = False
-#                        e_page_request.set()
-#                        e_thread_off.wait()
-#                        # Restart the thread and request page 0
-#                        self.run_thread = True
                         self.current_page = 0
-                        self.page_direction = -1
-#                        e_mosaic_ready.clear()
-#                        e_page_request.set()
-#                        tr = threading.Thread(target=self.mosaic_thread, 
-#                                         args=(e_mosaic_ready, e_page_request,
-#                                               e_thread_off))
-#                        tr.start()
-                        run_this_page = False
                         self.review_mode = True
-#                        e_mosaic_ready.wait()  # Wait for the mosaic
-#                        e_page_request.clear()  # Tell the thread to wait for a page request
+                        run_this_page = False
                         break
             
             # Save the status
