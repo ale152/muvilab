@@ -8,6 +8,7 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
+# BUG: error when showing the last page
 # BUG: kill the background thread when quitting
 # BUG: The time bar messes up with the click coordinates where the user clicks
 # TODO: Review annotations
@@ -82,10 +83,9 @@ class Annotator:
         it to main, then load a new one in memory and finally wait. After this, 
         cold_start is set to false and at each successive call the function 
         simply returns the cached image, load the next one and waits.'''
-        run = True
         cached_page = self.current_page
         cold_start = True
-        while run:
+        while self.run_thread:
             # The cached_page will be equal to self.current_page with a cold 
             # start, e self.current_page+1 if a page was already loaded. If
             # the user request a previous page (i.e. self.current_page-1),
@@ -308,6 +308,7 @@ class Annotator:
         # Initialise threading events
         e_mosaic_ready = threading.Event()
         e_page_request = threading.Event()
+        self.run_thread = True
         tr = threading.Thread(target=self.mosaic_thread, 
                                          args=(e_mosaic_ready, e_page_request))
         
