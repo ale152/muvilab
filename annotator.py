@@ -282,6 +282,7 @@ class Annotator:
         self.video_pages = self.list_to_pages(videos_list, existing_annotations)
         
         # Load status
+        self.review_mode = False
         if os.path.isfile(status_file):
             with open(status_file, 'r') as json_file:
                 data = json.load(json_file)
@@ -399,12 +400,13 @@ class Annotator:
                         break
             
             # Save the status
-            if self.debug_verbose == 1:
-                print('Saving status...')
-            with open(status_file, 'w+') as json_file:
-                status = {'time': time.time(),
-                          'page': self.current_page}
-                json_file.write(json.dumps(status, indent=1))
+            if not self.review_mode:
+                if self.debug_verbose == 1:
+                    print('Saving status...')
+                with open(status_file, 'w+') as json_file:
+                    status = {'time': time.time(),
+                              'page': self.current_page}
+                    json_file.write(json.dumps(status, indent=1))
 
             # Backup of the annotations
             if self.debug_verbose == 1:
