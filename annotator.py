@@ -26,17 +26,31 @@ class Annotator:
     try to update the code to make it more general, according to the time available and the number
     of requests.'''
 
-    def __init__(self, labels):
+    def __init__(self, labels, videos_folder, annotation_file='labels.json',
+                 status_file='status.json', video_ext=['.mp4', '.avi'],
+                 N_show_approx=100, screen_ratio=16/9):
+        
         self.labels = labels
+        
+        # Settings
+        self.videos_folder = videos_folder
+        self.annotation_file = annotation_file
+        self.status_file = status_file
+        self.video_ext = video_ext
+        self.N_show_approx = N_show_approx
+        self.screen_ratio = screen_ratio
+        
+        # Debug
+        self.debug_verbose = 1
 
     
-    def find_videos(self, videos_folder, video_ext):
+    def find_videos(self):
         '''Loop over the video folder looking for video files'''
         videos_list = []
-        for folder, _, files in os.walk(videos_folder):
+        for folder, _, files in os.walk(self.videos_folder):
             for file in files:
                 fullfile_path = os.path.join(folder, file)
-                if os.path.splitext(fullfile_path)[1] in video_ext:
+                if os.path.splitext(fullfile_path)[1] in self.video_ext:
                     videos_list.append(os.path.join(folder, file))
                     
         return videos_list
@@ -239,23 +253,12 @@ class Annotator:
 
 
     def main(self):
-        # Settings
-        videos_folder = r'G:\STS_sequences\Videos'
-        annotation_file = 'labels.json'
-        status_file = 'status.json'
-        video_ext = ['.mp4', '.avi']
-        N_show_approx = 100
-        screen_ratio = 16/9
-        
-        # Debug
-        self.debug_verbose = 1
-        
         # Calculate number of videos per row/col
-        self.Ny = int(np.sqrt(N_show_approx/screen_ratio))
-        self.Nx = int(np.sqrt(N_show_approx*screen_ratio))
+        self.Ny = int(np.sqrt(self.N_show_approx/self.screen_ratio))
+        self.Nx = int(np.sqrt(self.N_show_approx*self.screen_ratio))
         
         # Find video files in the video folder
-        videos_list = self.find_videos(videos_folder, video_ext)
+        videos_list = self.find_videos()
         # Calculate the video frame sizes
         cap = cv2.VideoCapture(videos_list[0])
         _, sample_frame = cap.read()
@@ -263,20 +266,20 @@ class Annotator:
         cap.release()
  
        # Load existing annotations
-        if os.path.isfile(annotation_file):
-            with open(annotation_file, 'r') as json_file:
+        if os.path.isfile(self.annotation_file):
+            with open(self.annotation_file, 'r') as json_file:
                 existing_annotations = json.load(json_file)
             print('Existing annotation found: %d items loaded' % len(existing_annotations))
         else:
-            print('No annotation found at %s' % annotation_file)
+            print('No annotation found at %s' % self.annotation_file)
             existing_annotations = []
         # Split the videos list into pages
         self.video_pages = self.list_to_pages(videos_list, existing_annotations)
         
         # Load status
         self.review_mode = False  # In review mode, the status is not saved
-        if os.path.isfile(status_file):
-            with open(status_file, 'r') as json_file:
+        if os.path.isfile(self.status_file):
+            with open(self.status_file, 'r') as json_file:
                 data = json.load(json_file)
             
             # Load the status
@@ -388,7 +391,7 @@ class Annotator:
             if not self.review_mode:
                 if self.debug_verbose == 1:
                     print('Saving status...')
-                with open(status_file, 'w+') as json_file:
+                with open(self.status_file, 'w+') as json_file:
                     status = {'time': time.time(),
                               'page': self.current_page}
                     json_file.write(json.dumps(status, indent=1))
@@ -396,13 +399,13 @@ class Annotator:
             # Backup of the annotations
             if self.debug_verbose == 1:
                 print('Backing up annotations...')
-            if os.path.isfile(annotation_file):
-                copyfile(annotation_file, annotation_file+'.backup')
+            if os.path.isfile(self.annotation_file):
+                copyfile(self.annotation_file, self.annotation_file+'.backup')
 
             # Save the annotations
             if self.debug_verbose == 1:
                 print('Saving annotations...')
-            with open(annotation_file, 'w+') as json_file:
+            with open(self.annotation_file, 'w+') as json_file:
                 # Save non empty labels only
                 non_empty = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
                 json_file.write(json.dumps(non_empty, indent=1))
@@ -435,6 +438,6 @@ if __name__ == '__main__':
                  {'name': 'ambiguous', 
                 'color': (0, 1, 1),
                 'event': cv2.EVENT_MBUTTONDOWN}
-                ])
+                ], r'G:\STS_sequences\Videos')
 
     annotator.main()
