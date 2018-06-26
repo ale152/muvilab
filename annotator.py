@@ -118,7 +118,6 @@ class Annotator:
             else:
                 if self.debug_verbose == 1:
                     print('(Thread) In standby...')
-                e_page_request.clear()
                 e_page_request.wait()
         
         if self.debug_verbose == 1:
@@ -316,6 +315,7 @@ class Annotator:
                                          args=(e_mosaic_ready, e_page_request))
         
         e_mosaic_ready.clear()
+        e_page_request.set()
         tr.start()
 
         if self.debug_verbose == 1:
@@ -327,7 +327,9 @@ class Annotator:
             # Wait for the mosaic to be generated
             if self.debug_verbose == 1:
                 print('Main is waiting for the mosaic...')
-            e_mosaic_ready.wait()
+            
+            e_mosaic_ready.wait()  # Wait for the mosaic
+            e_page_request.clear()  # Tell the thread to wait for a page request
             
             if self.debug_verbose == 1:
                 print('(Main) Mosaic received in the main loop')
@@ -361,10 +363,6 @@ class Annotator:
                     if key_input == -1:
                         continue
                     
-                    # Ignore user input until the next mosaic is ready
-                    if e_page_request.is_set():
-                        continue
-                    
                     if chr(key_input) in {'n', 'N'}:
                         if self.current_page < len(self.video_pages):
                             self.current_page += 1
@@ -389,6 +387,8 @@ class Annotator:
                         self.video_pages = self.list_to_pages(videos_list, existing_annotations, filter_label=review)
                         self.current_page = 0
                         run_this_page = False
+                        self.run_thread = False
+                        e_page_request.set()
                         break
             
             # Save the status
@@ -424,9 +424,8 @@ class Annotator:
             # Ask the mosaic generator for the next page
             if self.debug_verbose == 1:
                 print('(Main) New mosaic requested, waiting for it')
-            e_mosaic_ready.clear()
-            e_page_request.set()
-            e_mosaic_ready.wait()
+            e_mosaic_ready.clear()  # Set the mosaic to not ready
+            e_page_request.set()  # Request a new mosaic
 
            
 if __name__ == '__main__':
