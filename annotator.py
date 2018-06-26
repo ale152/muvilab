@@ -8,6 +8,7 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
+# BUG: error when showing the last page
 # BUG: kill the background thread when quitting
 # BUG: The time bar messes up with the click coordinates where the user clicks
 # TODO: Review annotations
@@ -43,64 +44,70 @@ class Annotator:
         return videos_list
 
     
-    def list_to_pages(self, videos_list):
+    def list_to_pages(self, videos_list, annotations, filter_label=False):
         '''Split a list of videos into an array arranged by pages of mosaics'''
+        # Filter the videos by labels if requested
+        if filter_label:
+            videos_list = [bf['video'] for bf in annotations]
+
+        # Convert the list into a list of pages of grids
         N_pages = int(np.ceil(len(videos_list)/self.Nx/self.Ny))
-        video_pages = [[[{'video': '', 'label': ''} for _ in range(self.Nx)] for _ in range(self.Ny)] for _ in range(N_pages)]
+        video_pages = [[[{'video': '', 'label': ''} for _ in range(self.Ny)] for _ in range(self.Nx)] for _ in range(N_pages)]
         vid = 0
         for p in range(N_pages):
-            for i in range(self.Ny):
-                for j in range(self.Nx):
+            for j in range(self.Nx):
+                for i in range(self.Ny):
                     if vid < len(videos_list):
-                        video_pages[p][i][j]['video'] = videos_list[vid]
+                        # Add the video to the grid
+                        video_pages[p][j][i]['video'] = videos_list[vid]
+                        # Add the annotation to the grid
+                        anno = [bf for bf in annotations if bf['video'] == videos_list[vid]]
+                        if anno:
+                            video_pages[p][j][i]['label'] = anno[0]['label']
+                        # Go to the next element in the video_list
                         vid += 1
         
         return video_pages
 
 
-    def mosaic_thread(self, e_mosaic_ready, e_page_request):
+    def mosaic_thread(self, e_mosaic_ready, e_page_request, e_thread_off):
         '''This function is a wrapper for create_mosaic that runs in a separate
         thread with main. When cold_start is true, it loads an image, returns 
         it to main, then load a new one in memory and finally wait. After this, 
         cold_start is set to false and at each successive call the function 
         simply returns the cached image, load the next one and waits.'''
-        run = True
-        cached_page = self.current_page
+        e_thread_off.clear()
         cold_start = True
-        while run:
-            # The cached_page will be equal to self.current_page with a cold 
-            # start, e self.current_page+1 if a page was already loaded. If
-            # the user request a previous page (i.e. self.current_page-1),
-            # the cached image should be discarded and a cold start should be
-            # done.
-            if cached_page not in {self.current_page, self.current_page+1}:
-                if self.debug_verbose == 1:
-                    print('(Thread) The cached page (%d) is different from the one requested (%d)' % 
-                          (cached_page-1, self.current_page))
-                cached_page = self.current_page
-                cold_start = True
-            
-            # If cold_start is false, there already is an image in memory.
-            # give it to main() and load the next one
-            if not cold_start:
-                # Set the mosaic to the last mosaic loaded
+        while self.run_thread:
+            # A cold_start is when no images are in memory. Simply load the current page
+            if cold_start:
+                # Get the mosaic of the current page
+                current_mosaic = self.create_mosaic(self.current_page)
+                page_in_cache = self.current_page
+                cold_start = False
+
+            # If the page in cache is the page requested, show it
+            if page_in_cache == self.current_page:
                 self.mosaic = current_mosaic
                 e_mosaic_ready.set()
-                        
-            # List video files
-            current_mosaic = self.create_mosaic(cached_page)
             
-            # Load the next page #
-            cached_page += 1
+                # Load the next mosaic
+                next_page = self.current_page+self.page_direction
+                next_page = np.max((0, np.min((next_page, len(self.video_pages)-1))))
+                # Only load the next page if it's different from the current one
+                if next_page != self.current_page:
+                    current_mosaic = self.create_mosaic(next_page)
+                    page_in_cache = next_page
             
-            # Wait after loading two pages
-            if cold_start:
-                cold_start = False
-            else:
-                if self.debug_verbose == 1:
-                    print('(Thread) In standby...')
-                e_page_request.clear()
+                # Wait for the next page request
                 e_page_request.wait()
+            else:
+                cold_start = True
+        
+        if self.debug_verbose == 1:
+            print('(Thread) The thread is dying now :(') 
+            
+        e_thread_off.set()
 
 
     def create_mosaic(self, page):
@@ -150,7 +157,7 @@ class Annotator:
                 j_scr += 1
                 
         if self.debug_verbose == 1:
-            print('(Thread) Page %d was correctly loaded' % page)
+            print('(Thread) Mosaic for page %d was correctly created' % page)
             
         return current_mosaic
 
@@ -185,7 +192,7 @@ class Annotator:
         i_click, j_click = self.click_to_ij(x_click, y_click)
         
         # Create the label
-        self.video_pages[self.current_page][i_click][j_click]['label'] = label_text
+        self.video_pages[self.current_page][j_click][i_click]['label'] = label_text
         
         # Update the rectangles
         self.update_rectangles()
@@ -197,7 +204,7 @@ class Annotator:
         i_click, j_click = self.click_to_ij(x_click, y_click)
         
         # Remove the label
-        self.video_pages[self.current_page][i_click][j_click]['label'] = ''
+        self.video_pages[self.current_page][j_click][i_click]['label'] = ''
         
         # Update the rectangles
         self.update_rectangles()
@@ -206,19 +213,19 @@ class Annotator:
     def update_rectangles(self):
         '''Update the rectangles shown in the gui according to the labels'''
         # Reset rectangles
-        self.rectangles = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
+        self.rectangles = [[[] for _ in range(self.Ny)] for _ in range(self.Nx)]
         # Find the items labelled in the current page
-        for i in range(self.Ny):
-            for j in range(self.Nx):
-                if not self.video_pages[self.current_page][i][j]['label']:
+        for j in range(self.Nx):
+            for i in range(self.Ny):
+                if not self.video_pages[self.current_page][j][i]['label']:
                     continue
             
                 # Add the rectangle
                 p1 = (j*self.frame_dim[1], i*self.frame_dim[0])
                 p2 = ((j+1)*self.frame_dim[1], (i+1)*self.frame_dim[0])
-                label_text = self.video_pages[self.current_page][i][j]['label']
+                label_text = self.video_pages[self.current_page][j][i]['label']
                 label_color = [bf['color'] for bf in self.labels if bf['name'] == label_text][0]
-                self.rectangles[i][j] = {'p1': p1, 'p2': p2, 
+                self.rectangles[j][i] = {'p1': p1, 'p2': p2, 
                               'color': label_color, 'label': label_text}
 
     
@@ -245,23 +252,29 @@ class Annotator:
         # Debug
         self.debug_verbose = 1
         
-        # Find video files in the video folder
-        videos_list = self.find_videos(videos_folder, video_ext)
-        
         # Calculate number of videos per row/col
         self.Ny = int(np.sqrt(N_show_approx/screen_ratio))
         self.Nx = int(np.sqrt(N_show_approx*screen_ratio))
         
+        # Find video files in the video folder
+        videos_list = self.find_videos(videos_folder, video_ext)
         # Calculate the video frame sizes
         cap = cv2.VideoCapture(videos_list[0])
         _, sample_frame = cap.read()
         self.frame_dim = sample_frame.shape
         cap.release()
-        
+ 
+       # Load existing annotations
+        if os.path.isfile(annotation_file):
+            with open(annotation_file, 'r') as json_file:
+                existing_annotations = json.load(json_file)
+        else:
+            existing_annotations = []
         # Split the videos list into pages
-        self.video_pages = self.list_to_pages(videos_list)
+        self.video_pages = self.list_to_pages(videos_list, existing_annotations)
         
         # Load status
+        self.review_mode = False
         if os.path.isfile(status_file):
             with open(status_file, 'r') as json_file:
                 data = json.load(json_file)
@@ -277,20 +290,9 @@ class Annotator:
         else:
             # Start from page zero
             self.current_page = 0
-            
-        # Load existing annotations
-        if os.path.isfile(annotation_file):
-            with open(annotation_file, 'r') as json_file:
-                existing_annotations = json.load(json_file)
-                
-            # Load the annotations into the video_pages array
-            for anno in existing_annotations:
-                # Find the right video to which apply the annotation
-                for page in self.video_pages:
-                    for sublist in page:
-                        for item in sublist:
-                            if item['video'] == anno['video']:
-                                item['label'] = anno['label']
+ 
+        # Page direction (used for the cache)
+        self.page_direction = +1
 
         # Initialise the GUI
         cv2.namedWindow('MuViDat')
@@ -299,10 +301,14 @@ class Annotator:
         # Initialise threading events
         e_mosaic_ready = threading.Event()
         e_page_request = threading.Event()
+        e_thread_off = threading.Event()
+        self.run_thread = True
         tr = threading.Thread(target=self.mosaic_thread, 
-                                         args=(e_mosaic_ready, e_page_request))
+                                         args=(e_mosaic_ready, e_page_request,
+                                               e_thread_off))
         
         e_mosaic_ready.clear()
+        e_page_request.set()
         tr.start()
 
         if self.debug_verbose == 1:
@@ -314,7 +320,9 @@ class Annotator:
             # Wait for the mosaic to be generated
             if self.debug_verbose == 1:
                 print('Main is waiting for the mosaic...')
-            e_mosaic_ready.wait()
+            
+            e_mosaic_ready.wait()  # Wait for the mosaic
+            e_page_request.clear()  # Tell the thread to wait for a page request
             
             if self.debug_verbose == 1:
                 print('(Main) Mosaic received in the main loop')
@@ -348,41 +356,56 @@ class Annotator:
                     if key_input == -1:
                         continue
                     
-                    # Ignore user input until the next mosaic is ready
-                    if e_page_request.is_set():
-                        continue
-                    
                     if chr(key_input) in {'n', 'N'}:
-                        if self.current_page < len(self.video_pages):
+                        if self.current_page < len(self.video_pages)-1:
                             self.current_page += 1
+                            self.page_direction = +1
                             run_this_page = False
                             break
                         
                     if chr(key_input) in {'b', 'B'}:
                             if self.current_page > 0:
                                 self.current_page -= 1
+                                self.page_direction = -1
                                 run_this_page = False
                                 break
                         
                     if chr(key_input) in {'q', 'Q'}:
-                            run = None
-                            run_this_page = False
-                            break
-            
-            # Ask the mosaic generator for the next page
-            if self.debug_verbose == 1:
-                print('(Main) New mosaic requested, waiting for it')
-            e_mosaic_ready.clear()
-            e_page_request.set()
-            e_mosaic_ready.wait()
+                        run = None
+                        run_this_page = False
+                        break
+                        
+                    if chr(key_input) in {'r', 'R'}:
+                        existing_annotations = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
+                        self.video_pages = self.list_to_pages(videos_list, existing_annotations, filter_label=True)
+#                        # Shut down the thread
+#                        self.run_thread = False
+#                        e_page_request.set()
+#                        e_thread_off.wait()
+#                        # Restart the thread and request page 0
+#                        self.run_thread = True
+                        self.current_page = 0
+                        self.page_direction = -1
+#                        e_mosaic_ready.clear()
+#                        e_page_request.set()
+#                        tr = threading.Thread(target=self.mosaic_thread, 
+#                                         args=(e_mosaic_ready, e_page_request,
+#                                               e_thread_off))
+#                        tr.start()
+                        run_this_page = False
+                        self.review_mode = True
+#                        e_mosaic_ready.wait()  # Wait for the mosaic
+#                        e_page_request.clear()  # Tell the thread to wait for a page request
+                        break
             
             # Save the status
-            if self.debug_verbose == 1:
-                print('Saving status...')
-            with open(status_file, 'w+') as json_file:
-                status = {'time': time.time(),
-                          'page': self.current_page}
-                json_file.write(json.dumps(status, indent=1))
+            if not self.review_mode:
+                if self.debug_verbose == 1:
+                    print('Saving status...')
+                with open(status_file, 'w+') as json_file:
+                    status = {'time': time.time(),
+                              'page': self.current_page}
+                    json_file.write(json.dumps(status, indent=1))
 
             # Backup of the annotations
             if self.debug_verbose == 1:
@@ -402,7 +425,15 @@ class Annotator:
             if run is None:
                 print('Quitting the program...')
                 cv2.destroyAllWindows()
+                self.run_thread = False
+                e_page_request.set()
                 return -1
+            
+            # Ask the mosaic generator for the next page
+            if self.debug_verbose == 1:
+                print('(Main) New mosaic requested, waiting for it')
+            e_mosaic_ready.clear()  # Set the mosaic to not ready
+            e_page_request.set()  # Request a new mosaic
 
            
 if __name__ == '__main__':
