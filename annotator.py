@@ -70,12 +70,13 @@ class Annotator:
         return video_pages
 
 
-    def mosaic_thread(self, e_mosaic_ready, e_page_request):
+    def mosaic_thread(self, e_mosaic_ready, e_page_request, e_thread_off):
         '''This function is a wrapper for create_mosaic that runs in a separate
         thread with main. When cold_start is true, it loads an image, returns 
         it to main, then load a new one in memory and finally wait. After this, 
         cold_start is set to false and at each successive call the function 
         simply returns the cached image, load the next one and waits.'''
+        e_thread_off.clear()
         cached_page = self.current_page
         cold_start = True
         while self.run_thread:
@@ -115,6 +116,8 @@ class Annotator:
         
         if self.debug_verbose == 1:
             print('(Thread) The thread is dying now :(') 
+            
+        e_thread_off.set()
 
 
     def create_mosaic(self, page):
@@ -303,9 +306,11 @@ class Annotator:
         # Initialise threading events
         e_mosaic_ready = threading.Event()
         e_page_request = threading.Event()
+        e_thread_off = threading.Event()
         self.run_thread = True
         tr = threading.Thread(target=self.mosaic_thread, 
-                                         args=(e_mosaic_ready, e_page_request))
+                                         args=(e_mosaic_ready, e_page_request,
+                                               e_thread_off))
         
         e_mosaic_ready.clear()
         e_page_request.set()
