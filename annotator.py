@@ -43,7 +43,7 @@ class Annotator:
         return videos_list
 
     
-    def list_to_pages(self, videos_list):
+    def list_to_pages(self, videos_list, annotations):
         '''Split a list of videos into an array arranged by pages of mosaics'''
         N_pages = int(np.ceil(len(videos_list)/self.Nx/self.Ny))
         video_pages = [[[{'video': '', 'label': ''} for _ in range(self.Nx)] for _ in range(self.Ny)] for _ in range(N_pages)]
@@ -52,7 +52,13 @@ class Annotator:
             for i in range(self.Ny):
                 for j in range(self.Nx):
                     if vid < len(videos_list):
+                        # Add the video to the grid
                         video_pages[p][i][j]['video'] = videos_list[vid]
+                        # Add the annotation to the grid
+                        anno = [bf for bf in annotations if bf['video'] == videos_list[vid]]
+                        if anno:
+                            video_pages[p][i][j]['label'] = anno[0]['label']
+                        # Go to the next element in the video_list
                         vid += 1
         
         return video_pages
@@ -245,21 +251,24 @@ class Annotator:
         # Debug
         self.debug_verbose = 1
         
-        # Find video files in the video folder
-        videos_list = self.find_videos(videos_folder, video_ext)
-        
         # Calculate number of videos per row/col
         self.Ny = int(np.sqrt(N_show_approx/screen_ratio))
         self.Nx = int(np.sqrt(N_show_approx*screen_ratio))
         
+        # Find video files in the video folder
+        videos_list = self.find_videos(videos_folder, video_ext)
         # Calculate the video frame sizes
         cap = cv2.VideoCapture(videos_list[0])
         _, sample_frame = cap.read()
         self.frame_dim = sample_frame.shape
         cap.release()
-        
+ 
+       # Load existing annotations
+        if os.path.isfile(annotation_file):
+            with open(annotation_file, 'r') as json_file:
+                existing_annotations = json.load(json_file)
         # Split the videos list into pages
-        self.video_pages = self.list_to_pages(videos_list)
+        self.video_pages = self.list_to_pages(videos_list, existing_annotations)
         
         # Load status
         if os.path.isfile(status_file):
@@ -277,20 +286,7 @@ class Annotator:
         else:
             # Start from page zero
             self.current_page = 0
-            
-        # Load existing annotations
-        if os.path.isfile(annotation_file):
-            with open(annotation_file, 'r') as json_file:
-                existing_annotations = json.load(json_file)
-                
-            # Load the annotations into the video_pages array
-            for anno in existing_annotations:
-                # Find the right video to which apply the annotation
-                for page in self.video_pages:
-                    for sublist in page:
-                        for item in sublist:
-                            if item['video'] == anno['video']:
-                                item['label'] = anno['label']
+ 
 
         # Initialise the GUI
         cv2.namedWindow('MuViDat')
