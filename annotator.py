@@ -378,15 +378,24 @@ class Annotator:
                         run_this_page = False
                         break
                         
-                    if chr(key_input) in {'1', '2', '3'}:
-                        elem = np.min((np.max((0, int(chr(key_input))-1)), len(self.labels)-1))
-                        review = self.labels[elem]['name']
+                    if chr(key_input) in {'r', 'R'}:
                         existing_annotations = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
-                        self.video_pages = self.list_to_pages(videos_list, existing_annotations, filter_label=review)
-                        self.current_page = 0
-                        run_this_page = False
+                        self.video_pages = self.list_to_pages(videos_list, existing_annotations, filter_label=True)
+                        # Shut down the thread
                         self.run_thread = False
                         e_page_request.set()
+                        e_thread_off.wait()
+                        # Restart the thread and request page 0
+                        self.run_thread = True
+                        self.current_page = 0
+                        e_mosaic_ready.clear()
+                        e_page_request.set()
+                        tr = threading.Thread(target=self.mosaic_thread, 
+                                         args=(e_mosaic_ready, e_page_request,
+                                               e_thread_off))
+                        tr.start()
+                        run_this_page = False
+                        self.review_mode = True
                         break
             
             # Save the status
