@@ -43,8 +43,20 @@ class Annotator:
         return videos_list
 
     
-    def list_to_pages(self, videos_list, annotations):
+    def list_to_pages(self, videos_list, annotations, filter_label=None):
         '''Split a list of videos into an array arranged by pages of mosaics'''
+        # Filter the videos by labels if requested
+        if filter_label:
+            flt_videos_list = []
+            for item in videos_list:
+                anno = [bf for bf in annotations if bf['video'] == item]
+                if anno and anno[0]['label'] == filter_label:
+                    flt_videos_list.append(item)
+            
+            # Copy the filtered video list into the video list
+            videos_list = flt_videos_list[:]
+
+        # Convert the list into a list of pages of grids
         N_pages = int(np.ceil(len(videos_list)/self.Nx/self.Ny))
         video_pages = [[[{'video': '', 'label': ''} for _ in range(self.Nx)] for _ in range(self.Ny)] for _ in range(N_pages)]
         vid = 0
