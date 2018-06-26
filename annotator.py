@@ -82,7 +82,7 @@ class Annotator:
             # A cold_start is when no images are in memory. Simply load the current page
             if cold_start:
                 # Get the mosaic of the current page
-                current_mosaic = self.create_mosairc(self.current_page)
+                current_mosaic = self.create_mosaic(self.current_page)
                 page_in_cache = self.current_page
                 cold_start = False
 
