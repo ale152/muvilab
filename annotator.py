@@ -59,18 +59,18 @@ class Annotator:
 
         # Convert the list into a list of pages of grids
         N_pages = int(np.ceil(len(videos_list)/self.Nx/self.Ny))
-        video_pages = [[[{'video': '', 'label': ''} for _ in range(self.Nx)] for _ in range(self.Ny)] for _ in range(N_pages)]
+        video_pages = [[[{'video': '', 'label': ''} for _ in range(self.Ny)] for _ in range(self.Nx)] for _ in range(N_pages)]
         vid = 0
         for p in range(N_pages):
-            for i in range(self.Ny):
-                for j in range(self.Nx):
+            for j in range(self.Nx):
+                for i in range(self.Ny):
                     if vid < len(videos_list):
                         # Add the video to the grid
-                        video_pages[p][i][j]['video'] = videos_list[vid]
+                        video_pages[p][j][i]['video'] = videos_list[vid]
                         # Add the annotation to the grid
                         anno = [bf for bf in annotations if bf['video'] == videos_list[vid]]
                         if anno:
-                            video_pages[p][i][j]['label'] = anno[0]['label']
+                            video_pages[p][j][i]['label'] = anno[0]['label']
                         # Go to the next element in the video_list
                         vid += 1
         
@@ -206,7 +206,7 @@ class Annotator:
         i_click, j_click = self.click_to_ij(x_click, y_click)
         
         # Create the label
-        self.video_pages[self.current_page][i_click][j_click]['label'] = label_text
+        self.video_pages[self.current_page][j_click][i_click]['label'] = label_text
         
         # Update the rectangles
         self.update_rectangles()
@@ -218,7 +218,7 @@ class Annotator:
         i_click, j_click = self.click_to_ij(x_click, y_click)
         
         # Remove the label
-        self.video_pages[self.current_page][i_click][j_click]['label'] = ''
+        self.video_pages[self.current_page][j_click][i_click]['label'] = ''
         
         # Update the rectangles
         self.update_rectangles()
@@ -227,19 +227,19 @@ class Annotator:
     def update_rectangles(self):
         '''Update the rectangles shown in the gui according to the labels'''
         # Reset rectangles
-        self.rectangles = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
+        self.rectangles = [[[] for _ in range(self.Ny)] for _ in range(self.Nx)]
         # Find the items labelled in the current page
-        for i in range(self.Ny):
-            for j in range(self.Nx):
-                if not self.video_pages[self.current_page][i][j]['label']:
+        for j in range(self.Nx):
+            for i in range(self.Ny):
+                if not self.video_pages[self.current_page][j][i]['label']:
                     continue
             
                 # Add the rectangle
                 p1 = (j*self.frame_dim[1], i*self.frame_dim[0])
                 p2 = ((j+1)*self.frame_dim[1], (i+1)*self.frame_dim[0])
-                label_text = self.video_pages[self.current_page][i][j]['label']
+                label_text = self.video_pages[self.current_page][j][i]['label']
                 label_color = [bf['color'] for bf in self.labels if bf['name'] == label_text][0]
-                self.rectangles[i][j] = {'p1': p1, 'p2': p2, 
+                self.rectangles[j][i] = {'p1': p1, 'p2': p2, 
                               'color': label_color, 'label': label_text}
 
     
