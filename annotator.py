@@ -3,12 +3,17 @@
 import os
 import json
 import time
+import threading
 from shutil import copyfile
 import numpy as np
 import cv2
 
+# BUG: kill the background thread when quitting
+# BUG: The time bar messes up with the click coordinates where the user clicks
+# TODO: Review annotations
 # TODO: Add check labels are changed
 # TODO: Add check video file is a video file
+# TODO: Add check for valid json files
 
 class Annotator:
     '''Annotate multiple videos simultaneously by clicking on them. The current configuration
@@ -53,13 +58,59 @@ class Annotator:
         return video_pages
 
 
-    def create_mosaic(self, videos_list):
-        '''This function create a mosaic of videos given a set of video files'''
-        # List video files
+    def mosaic_thread(self, e_mosaic_ready, e_page_request):
+        '''This function is a wrapper for create_mosaic that runs in a separate
+        thread with main. When cold_start is true, it loads an image, returns 
+        it to main, then load a new one in memory and finally wait. After this, 
+        cold_start is set to false and at each successive call the function 
+        simply returns the cached image, load the next one and waits.'''
+        run = True
+        cached_page = self.current_page
+        cold_start = True
+        while run:
+            # The cached_page will be equal to self.current_page with a cold 
+            # start, e self.current_page+1 if a page was already loaded. If
+            # the user request a previous page (i.e. self.current_page-1),
+            # the cached image should be discarded and a cold start should be
+            # done.
+            if cached_page not in {self.current_page, self.current_page+1}:
+                if self.debug_verbose == 1:
+                    print('(Thread) The cached page (%d) is different from the one requested (%d)' % 
+                          (cached_page-1, self.current_page))
+                cached_page = self.current_page
+                cold_start = True
+            
+            # If cold_start is false, there already is an image in memory.
+            # give it to main() and load the next one
+            if not cold_start:
+                # Set the mosaic to the last mosaic loaded
+                self.mosaic = current_mosaic
+                e_mosaic_ready.set()
+                        
+            # List video files
+            current_mosaic = self.create_mosaic(cached_page)
+            
+            # Load the next page #
+            cached_page += 1
+            
+            # Wait after loading two pages
+            if cold_start:
+                cold_start = False
+            else:
+                if self.debug_verbose == 1:
+                    print('(Thread) In standby...')
+                e_page_request.clear()
+                e_page_request.wait()
+
+
+    def create_mosaic(self, page):
+        '''This function loads videos and arrange them into a mosaic. The videos
+        are taken from self.video_pages, the input argument page'''
+        videos_list = [item['video'] for sublist in self.video_pages[page] for item in sublist]
         init = True
         # Loop over all the video files in the day folder
         for vi, video_file in enumerate(videos_list):
-            print('\rLoading file %s' % video_file, end=' ')
+            #print('\rLoading file %s' % video_file, end=' ')
             
             # Deal with long lists
             if vi == self.Nx*self.Ny:
@@ -77,17 +128,13 @@ class Annotator:
                 if init:
                     fdim = frame.shape
                     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
+                    current_mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
                     i_scr, j_scr, k_time = 0, 0, 0
-                    mosaic_names = [[[] for _ in range(self.Nx)] for _ in range(self.Ny)]
                     init = False
                 
                 # Add video to the grid
-                mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
+                current_mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
                              j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
-                             
-                # Save the file name
-                mosaic_names[i_scr][j_scr] = video_file
                 
                 # When all the frames have been read
                 k_time += 1
@@ -101,10 +148,12 @@ class Annotator:
             if i_scr == self.Ny:
                 i_scr = 0
                 j_scr += 1
-        
-        # Write some metadata to yield with the batch
-        return mosaic, mosaic_names
-                    
+                
+        if self.debug_verbose == 1:
+            print('(Thread) Page %d was correctly loaded' % page)
+            
+        return current_mosaic
+
 
     # Create the click callback
     def click_callback(self, event, x_click, y_click, flags, param):
@@ -121,11 +170,19 @@ class Annotator:
             self.remove_label(x_click, y_click)
 
 
+    def click_to_ij(self, x_click, y_click):
+        '''Convert the x-y coordinates of the mouse into i-j elements of the 
+        mosaic'''
+        i_click = int(np.floor((y_click) / self.mosaic_dim[1] * self.Ny))
+        j_click = int(np.floor((x_click) / self.mosaic_dim[2] * self.Nx))
+        i_click = np.min((np.max((0, i_click)), self.Ny-1))
+        j_click = np.min((np.max((0, j_click)), self.Nx-1))
+        return i_click, j_click
+
     def set_label(self, label_text, label_color, x_click, y_click):
         '''Set a specific label based on the user click input'''
         # Find the indices of the clicked sequence
-        i_click = int(np.floor((y_click ) / self.mosaic_dim[1] * self.Ny))
-        j_click = int(np.floor((x_click ) / self.mosaic_dim[2] * self.Nx))
+        i_click, j_click = self.click_to_ij(x_click, y_click)
         
         # Create the label
         self.video_pages[self.current_page][i_click][j_click]['label'] = label_text
@@ -137,8 +194,7 @@ class Annotator:
     def remove_label(self, x_click, y_click):
         '''Remove label from the annotations'''
         # Find the indices of the clicked sequence
-        i_click = int(np.floor((y_click ) / self.mosaic_dim[1] * self.Ny))
-        j_click = int(np.floor((x_click ) / self.mosaic_dim[2] * self.Nx))
+        i_click, j_click = self.click_to_ij(x_click, y_click)
         
         # Remove the label
         self.video_pages[self.current_page][i_click][j_click]['label'] = ''
@@ -179,7 +235,7 @@ class Annotator:
 
     def main(self):
         # Settings
-        videos_folder = r'./Videos'
+        videos_folder = r'G:\STS_sequences\Videos'
         annotation_file = 'labels.json'
         status_file = 'status.json'
         video_ext = ['.mp4', '.avi']
@@ -240,13 +296,30 @@ class Annotator:
         cv2.namedWindow('MuViDat')
         cv2.setMouseCallback('MuViDat', self.click_callback)
         
+        # Initialise threading events
+        e_mosaic_ready = threading.Event()
+        e_page_request = threading.Event()
+        tr = threading.Thread(target=self.mosaic_thread, 
+                                         args=(e_mosaic_ready, e_page_request))
+        
+        e_mosaic_ready.clear()
+        tr.start()
+
+        if self.debug_verbose == 1:
+            print('(Main) Mosaic generator started in background, waiting for the mosaic...')
+        
         # Main loop
         run = True
         while run:
-            # Get the mosaic for the current page
-            videos_in_page = [item['video'] for sublist in self.video_pages[self.current_page] for item in sublist]
-            mosaic, _ = self.create_mosaic(videos_in_page)
-            self.mosaic_dim = mosaic.shape
+            # Wait for the mosaic to be generated
+            if self.debug_verbose == 1:
+                print('Main is waiting for the mosaic...')
+            e_mosaic_ready.wait()
+            
+            if self.debug_verbose == 1:
+                print('(Main) Mosaic received in the main loop')
+            
+            self.mosaic_dim = self.mosaic.shape
             
             # Update the rectangles
             self.update_rectangles()
@@ -256,8 +329,8 @@ class Annotator:
             # GUI loop
             run_this_page = True
             while run_this_page:
-                for f in range(mosaic.shape[0]):
-                    img = np.copy(mosaic[f, ...])
+                for f in range(self.mosaic.shape[0]):
+                    img = np.copy(self.mosaic[f, ...])
                     # Add rectangle to display selected sequence
                     rec_list = [item for sublist in self.rectangles for item in sublist if item]
                     for rec in rec_list:
@@ -266,13 +339,17 @@ class Annotator:
                         cv2.putText(img, rec['label'], textpt, cv2.FONT_HERSHEY_SIMPLEX, 0.4, rec['color'])
                     
                     # Add a timebar
-                    img = self.add_timebar(img, f/mosaic.shape[0])
+                    img = self.add_timebar(img, f/self.mosaic.shape[0])
                     
                     cv2.imshow('MuViDat', img)
                     
                     # Deal with the keyboard input
                     key_input = cv2.waitKey(30)
                     if key_input == -1:
+                        continue
+                    
+                    # Ignore user input until the next mosaic is ready
+                    if e_page_request.is_set():
                         continue
                     
                     if chr(key_input) in {'n', 'N'}:
@@ -291,6 +368,13 @@ class Annotator:
                             run = None
                             run_this_page = False
                             break
+            
+            # Ask the mosaic generator for the next page
+            if self.debug_verbose == 1:
+                print('(Main) New mosaic requested, waiting for it')
+            e_mosaic_ready.clear()
+            e_page_request.set()
+            e_mosaic_ready.wait()
             
             # Save the status
             if self.debug_verbose == 1:
