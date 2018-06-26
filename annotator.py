@@ -120,6 +120,9 @@ class Annotator:
                     print('(Thread) In standby...')
                 e_page_request.clear()
                 e_page_request.wait()
+        
+        if self.debug_verbose == 1:
+            print('(Thread) The thread is dying now :(') 
 
 
     def create_mosaic(self, page):
@@ -388,13 +391,6 @@ class Annotator:
                         run_this_page = False
                         break
             
-            # Ask the mosaic generator for the next page
-            if self.debug_verbose == 1:
-                print('(Main) New mosaic requested, waiting for it')
-            e_mosaic_ready.clear()
-            e_page_request.set()
-            e_mosaic_ready.wait()
-            
             # Save the status
             if self.debug_verbose == 1:
                 print('Saving status...')
@@ -421,7 +417,16 @@ class Annotator:
             if run is None:
                 print('Quitting the program...')
                 cv2.destroyAllWindows()
+                self.run_thread = False
+                e_page_request.set()
                 return -1
+            
+            # Ask the mosaic generator for the next page
+            if self.debug_verbose == 1:
+                print('(Main) New mosaic requested, waiting for it')
+            e_mosaic_ready.clear()
+            e_page_request.set()
+            e_mosaic_ready.wait()
 
            
 if __name__ == '__main__':
