@@ -9,35 +9,40 @@ import numpy as np
 import cv2
 
 # BUG: The time bar messes up with the click coordinates where the user clicks
-# TODO: Add check labels are changed
-# TODO: Add check have different filenames
+# TODO: Deal with absolute/relative path of windows/linux in annotations
+# TODO: Status should save the first video in the page shown, rather than the page number!
 # TODO: Add check video file is a video file
-# TODO: Add check for valid json files
 
 class Annotator:
-    '''Annotate multiple videos simultaneously by clicking on them. The current configuration
-    requires the videos to be in subfolders located in "videos_folder". The algorithm will loop
-    through the folders and load all the videos in them.
-    
-    /!\ LIMITATIONS /!\ 
-    This code was mainly written for my specific application and I decided to upload it on github
-    as it might be helpful for other people.
-    It assumes that all the videos are the same length (100 frames) and are black and white. I will
-    try to update the code to make it more general, according to the time available and the number
-    of requests.'''
+    '''Annotate multiple videos simultaneously by clicking on them.
+    See demo.py for a working example.'''
 
-    def __init__(self, labels):
+    def __init__(self, labels, videos_folder, annotation_file='labels.json',
+                 status_file='status.json', video_ext=['.mp4', '.avi'],
+                 N_show_approx=100, screen_ratio=16/9):
+        
         self.labels = labels
+        
+        # Settings
+        self.videos_folder = videos_folder
+        self.annotation_file = annotation_file
+        self.status_file = status_file
+        self.video_ext = video_ext
+        self.N_show_approx = N_show_approx
+        self.screen_ratio = screen_ratio
+        
+        # Debug
+        self.debug_verbose = 0
 
     
-    def find_videos(self, videos_folder, video_ext):
+    def find_videos(self):
         '''Loop over the video folder looking for video files'''
         videos_list = []
-        for folder, _, files in os.walk(videos_folder):
+        for folder, _, files in os.walk(self.videos_folder):
             for file in files:
                 fullfile_path = os.path.join(folder, file)
-                if os.path.splitext(fullfile_path)[1] in video_ext:
-                    videos_list.append(os.path.join(folder, file))
+                if os.path.splitext(fullfile_path)[1] in self.video_ext:
+                    videos_list.append(os.path.realpath(os.path.join(folder, file)))
                     
         return videos_list
 
@@ -91,7 +96,7 @@ class Annotator:
             
                 # Load the next mosaic
                 next_page = self.current_page+self.page_direction
-                next_page = np.max((0, np.min((next_page, len(self.video_pages)-1))))
+                next_page = int(np.max((0, np.min((next_page, len(self.video_pages)-1)))))
                 # Only load the next page if it's different from the current one
                 if next_page != self.current_page:
                     current_mosaic = self.create_mosaic(next_page)
@@ -180,8 +185,8 @@ class Annotator:
         mosaic'''
         i_click = int(np.floor((y_click) / self.mosaic_dim[1] * self.Ny))
         j_click = int(np.floor((x_click) / self.mosaic_dim[2] * self.Nx))
-        i_click = np.min((np.max((0, i_click)), self.Ny-1))
-        j_click = np.min((np.max((0, j_click)), self.Nx-1))
+        i_click = int(np.min((np.max((0, i_click)), self.Ny-1)))
+        j_click = int(np.min((np.max((0, j_click)), self.Nx-1)))
         return i_click, j_click
 
     def set_label(self, label_text, label_color, x_click, y_click):
@@ -238,58 +243,86 @@ class Annotator:
         return img
 
 
+    def load_annotations(self):
+        '''Load annotations from self.annotation_file'''
+        if os.path.isfile(self.annotation_file):
+            with open(self.annotation_file, 'r') as json_file:
+                try:
+                    annotations = json.load(json_file)
+                    print('Existing annotation found: %d items' % len(annotations))
+                    # Normalise the paths and check that labels are valid
+                    valid_labels = {bf['name'] for bf in self.labels}
+                    for anno in annotations:
+                        anno['video'] = os.path.normpath(anno['video'])
+                        
+                        # Check if the label is part of the valid set
+                        if anno['label'] and anno['label'] not in valid_labels:
+                            print(('Found label "%s" in %s, not compatible with %s. ' +
+                                  'All the labels will be discarded') %
+                                  (anno['label'], self.annotation_file, valid_labels))
+                            annotations = []
+                            break
+                    
+                    
+                except json.JSONDecodeError:
+                    print('Unable to load annotations from %s' % self.annotation_file)
+                    annotations = []
+        else:
+            print('No annotation found at %s' % self.annotation_file)
+            annotations = []
+            
+        return annotations
+
+
+    def load_status(self):
+        '''Load the status from self.status_file and set self.current_page'''
+        if os.path.isfile(self.status_file):
+            with open(self.status_file, 'r') as json_file:
+                try:
+                    data = json.load(json_file)
+                    # Load the status
+                    status_time = data['time']
+                    status_page = data['page']
+                    print('Status file found at %s. Loading from page %d' %
+                          (status_time, status_page))
+                except json.JSONDecodeError:
+                    status_page = 0
+                    print('Error while loading the status file.')
+            
+            # Set the status
+            self.current_page = status_page
+            self.current_page = int(np.max((0, np.min((self.current_page, len(self.video_pages)-1)))))
+        else:
+            # Start from page zero
+            self.current_page = 0
+
+
     def main(self):
-        # Settings
-        videos_folder = r'G:\STS_sequences\Videos'
-        annotation_file = 'labels.json'
-        status_file = 'status.json'
-        video_ext = ['.mp4', '.avi']
-        N_show_approx = 100
-        screen_ratio = 16/9
-        
-        # Debug
-        self.debug_verbose = 1
-        
-        # Calculate number of videos per row/col
-        self.Ny = int(np.sqrt(N_show_approx/screen_ratio))
-        self.Nx = int(np.sqrt(N_show_approx*screen_ratio))
-        
         # Find video files in the video folder
-        videos_list = self.find_videos(videos_folder, video_ext)
+        videos_list = self.find_videos()
+        if not videos_list:
+            print('No videos found at %s' % self.videos_folder)
+            return -1
+        
         # Calculate the video frame sizes
         cap = cv2.VideoCapture(videos_list[0])
         _, sample_frame = cap.read()
         self.frame_dim = sample_frame.shape
         cap.release()
+        
+        # Calculate number of videos per row/col
+        self.Ny = int(np.sqrt(self.N_show_approx/self.screen_ratio * self.frame_dim[1]/self.frame_dim[0]))
+        self.Nx = int(np.sqrt(self.N_show_approx*self.screen_ratio * self.frame_dim[0]/self.frame_dim[1]))
  
        # Load existing annotations
-        if os.path.isfile(annotation_file):
-            with open(annotation_file, 'r') as json_file:
-                existing_annotations = json.load(json_file)
-            print('Existing annotation found: %d items loaded' % len(existing_annotations))
-        else:
-            print('No annotation found at %s' % annotation_file)
-            existing_annotations = []
+        existing_annotations = self.load_annotations()
+
         # Split the videos list into pages
         self.video_pages = self.list_to_pages(videos_list, existing_annotations)
         
         # Load status
         self.review_mode = False  # In review mode, the status is not saved
-        if os.path.isfile(status_file):
-            with open(status_file, 'r') as json_file:
-                data = json.load(json_file)
-            
-            # Load the status
-            status_time = data['time']
-            status_page = data['page']
-            print('Status file found at %s. Loading from page %d' %
-                  (status_time, status_page))
-            
-            # Set the status
-            self.current_page = status_page
-        else:
-            # Start from page zero
-            self.current_page = 0
+        self.load_status()
  
         # Page direction (used for the cache)
         self.page_direction = +1
@@ -378,6 +411,12 @@ class Annotator:
                     if chr(key_input) in {'r', 'R'}:
                         # Update self.video_pages using labelled data only
                         existing_annotations = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
+                        if not existing_annotations:
+                            # No annotations, no reviewing mode
+                            print('Please annotate some videos before entering reviewing mode')
+                            continue
+                        
+                        print('Entering reviewing mode. Press "q" to quit')
                         self.video_pages = self.list_to_pages(videos_list, existing_annotations, filter_label=True)
                         self.current_page = 0
                         self.review_mode = True
@@ -388,7 +427,7 @@ class Annotator:
             if not self.review_mode:
                 if self.debug_verbose == 1:
                     print('Saving status...')
-                with open(status_file, 'w+') as json_file:
+                with open(self.status_file, 'w+') as json_file:
                     status = {'time': time.time(),
                               'page': self.current_page}
                     json_file.write(json.dumps(status, indent=1))
@@ -396,13 +435,13 @@ class Annotator:
             # Backup of the annotations
             if self.debug_verbose == 1:
                 print('Backing up annotations...')
-            if os.path.isfile(annotation_file):
-                copyfile(annotation_file, annotation_file+'.backup')
+            if os.path.isfile(self.annotation_file):
+                copyfile(self.annotation_file, self.annotation_file+'.backup')
 
             # Save the annotations
             if self.debug_verbose == 1:
                 print('Saving annotations...')
-            with open(annotation_file, 'w+') as json_file:
+            with open(self.annotation_file, 'w+') as json_file:
                 # Save non empty labels only
                 non_empty = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
                 json_file.write(json.dumps(non_empty, indent=1))
@@ -423,8 +462,8 @@ class Annotator:
 
            
 if __name__ == '__main__':
-    annotator = Annotator([
-                {'name': 'sit down', 
+    videos_folder = r'./Videos'
+    labels = [{'name': 'sit down', 
                 'color': (0, 1, 0),
                 'event': cv2.EVENT_LBUTTONDOWN},
 
@@ -434,7 +473,6 @@ if __name__ == '__main__':
                  
                  {'name': 'ambiguous', 
                 'color': (0, 1, 1),
-                'event': cv2.EVENT_MBUTTONDOWN}
-                ])
-
+                'event': cv2.EVENT_MBUTTONDOWN}]
+    annotator = Annotator(labels, videos_folder)
     annotator.main()
