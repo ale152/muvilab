@@ -11,10 +11,8 @@ import cv2
 # BUG: The time bar messes up with the click coordinates where the user clicks
 # TODO: Status should save the first video in the page shown, rather than the page number!
 # TODO: Available labels should be saved in the status file
-# TODO: Add check labels are changed
 # TODO: Add check have different filenames
 # TODO: Add check video file is a video file
-# TODO: Add check for valid json files
 
 class Annotator:
     '''Annotate multiple videos simultaneously by clicking on them. The current configuration
@@ -260,11 +258,19 @@ class Annotator:
             with open(self.annotation_file, 'r') as json_file:
                 try:
                     annotations = json.load(json_file)
-                    # Normalise the paths
+                    print('Existing annotation found: %d items' % len(annotations))
+                    # Normalise the paths and check that labels are valid
+                    valid_labels = {bf['name'] for bf in self.labels}
                     for anno in annotations:
                         anno['video'] = os.path.normpath(anno['video'])
+                        if anno['label'] and anno['label'] not in valid_labels:
+                            print(('Found label "%s" in %s, not compatible with %s. ' +
+                                  'All the labels will be discarded') %
+                                  (anno['label'], self.annotation_file, valid_labels))
+                            annotations = []
+                            break
                     
-                    print('Existing annotation found: %d items loaded' % len(annotations))
+                    
                 except json.JSONDecodeError:
                     print('Unable to load annotations from %s' % self.annotation_file)
                     annotations = []
@@ -304,6 +310,7 @@ class Annotator:
         if not videos_list:
             print('No videos found at %s' % self.videos_folder)
             return -1
+        
         # Calculate the video frame sizes
         cap = cv2.VideoCapture(videos_list[0])
         _, sample_frame = cap.read()
