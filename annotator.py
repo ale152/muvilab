@@ -288,13 +288,16 @@ class Annotator:
         self.review_mode = False  # In review mode, the status is not saved
         if os.path.isfile(self.status_file):
             with open(self.status_file, 'r') as json_file:
-                data = json.load(json_file)
-            
-            # Load the status
-            status_time = data['time']
-            status_page = data['page']
-            print('Status file found at %s. Loading from page %d' %
-                  (status_time, status_page))
+                try:
+                    data = json.load(json_file)
+                    # Load the status
+                    status_time = data['time']
+                    status_page = data['page']
+                    print('Status file found at %s. Loading from page %d' %
+                          (status_time, status_page))
+                except json.JSONDecodeError:
+                    status_page = 0
+                    print('Error while loading the status file.')
             
             # Set the status
             self.current_page = status_page
