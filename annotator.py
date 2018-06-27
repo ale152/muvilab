@@ -51,7 +51,7 @@ class Annotator:
             for file in files:
                 fullfile_path = os.path.join(folder, file)
                 if os.path.splitext(fullfile_path)[1] in self.video_ext:
-                    videos_list.append(os.path.normpath(os.path.join(folder, file)))
+                    videos_list.append(os.path.realpath(os.path.join(folder, file)))
                     
         return videos_list
 
@@ -263,6 +263,8 @@ class Annotator:
                     valid_labels = {bf['name'] for bf in self.labels}
                     for anno in annotations:
                         anno['video'] = os.path.normpath(anno['video'])
+                        
+                        # Check if the label is part of the valid set
                         if anno['label'] and anno['label'] not in valid_labels:
                             print(('Found label "%s" in %s, not compatible with %s. ' +
                                   'All the labels will be discarded') %
@@ -323,6 +325,7 @@ class Annotator:
  
        # Load existing annotations
         existing_annotations = self.load_annotations()
+
         # Split the videos list into pages
         self.video_pages = self.list_to_pages(videos_list, existing_annotations)
         
