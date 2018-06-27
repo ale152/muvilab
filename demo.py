@@ -48,7 +48,7 @@ while cap.isOpened():
         clip = cv2.VideoWriter(os.path.join(clips_folder, 'clip_%04d.mp4' % clip_counter),
                                fourcc, fps, (fdim[1], fdim[0]))
         
-    if video_time < n_frames:
+    if video_time < n_frames-1:
         video_time += 1
     else:
         cap.release()
