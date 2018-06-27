@@ -298,6 +298,7 @@ class Annotator:
             
             # Set the status
             self.current_page = status_page
+            self.current_page = np.max((0, np.min((self.current_page, len(self.video_pages)-1))))
         else:
             # Start from page zero
             self.current_page = 0
