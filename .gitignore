@@ -1,13 +1,3 @@
-*.png
-*.jpg
-*.gif
-*.tif
-*.tiff
-*.svg
-*.fig
-*.mp4
-*.avi
-
 *.npz
 *.pyc
 *.h5
