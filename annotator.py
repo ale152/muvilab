@@ -253,10 +253,6 @@ class Annotator:
 
 
     def main(self):
-        # Calculate number of videos per row/col
-        self.Ny = int(np.sqrt(self.N_show_approx/self.screen_ratio))
-        self.Nx = int(np.sqrt(self.N_show_approx*self.screen_ratio))
-        
         # Find video files in the video folder
         videos_list = self.find_videos()
         # Calculate the video frame sizes
@@ -264,6 +260,10 @@ class Annotator:
         _, sample_frame = cap.read()
         self.frame_dim = sample_frame.shape
         cap.release()
+        
+        # Calculate number of videos per row/col
+        self.Ny = int(np.sqrt(self.N_show_approx/self.screen_ratio * self.frame_dim[1]/self.frame_dim[0]))
+        self.Nx = int(np.sqrt(self.N_show_approx*self.screen_ratio * self.frame_dim[0]/self.frame_dim[1]))
  
        # Load existing annotations
         if os.path.isfile(self.annotation_file):
