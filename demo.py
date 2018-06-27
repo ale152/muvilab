@@ -41,7 +41,7 @@ while cap.isOpened():
         clip_time += 1
     else:
         # Save the clip
-        print('\rClip %d complete' % clip_counter)
+        print('\rClip %d complete' % clip_counter, end=' ')
         clip.release()
         clip_time = 0
         clip_counter += 1
