@@ -254,39 +254,25 @@ class Annotator:
         return img
 
 
-    def main(self):
-        # Find video files in the video folder
-        videos_list = self.find_videos()
-        if not videos_list:
-            print('No videos found at %s' % self.videos_folder)
-            return -1
-        # Calculate the video frame sizes
-        cap = cv2.VideoCapture(videos_list[0])
-        _, sample_frame = cap.read()
-        self.frame_dim = sample_frame.shape
-        cap.release()
-        
-        # Calculate number of videos per row/col
-        self.Ny = int(np.sqrt(self.N_show_approx/self.screen_ratio * self.frame_dim[1]/self.frame_dim[0]))
-        self.Nx = int(np.sqrt(self.N_show_approx*self.screen_ratio * self.frame_dim[0]/self.frame_dim[1]))
- 
-       # Load existing annotations
+    def load_annotations(self):
+        '''Load annotations from self.annotation_file'''
         if os.path.isfile(self.annotation_file):
             with open(self.annotation_file, 'r') as json_file:
-                existing_annotations = json.load(json_file)
+                annotations = json.load(json_file)
                 # Normalise the paths
-                for anno in existing_annotations:
+                for anno in annotations:
                     anno['video'] = os.path.normpath(anno['video'])
                     
-            print('Existing annotation found: %d items loaded' % len(existing_annotations))
+            print('Existing annotation found: %d items loaded' % len(annotations))
         else:
             print('No annotation found at %s' % self.annotation_file)
-            existing_annotations = []
-        # Split the videos list into pages
-        self.video_pages = self.list_to_pages(videos_list, existing_annotations)
-        
-        # Load status
-        self.review_mode = False  # In review mode, the status is not saved
+            annotations = []
+            
+        return annotations
+
+
+    def load_status(self):
+        '''Load the status from self.status_file and set self.current_page'''
         if os.path.isfile(self.status_file):
             with open(self.status_file, 'r') as json_file:
                 try:
@@ -306,6 +292,32 @@ class Annotator:
         else:
             # Start from page zero
             self.current_page = 0
+
+
+    def main(self):
+        # Find video files in the video folder
+        videos_list = self.find_videos()
+        if not videos_list:
+            print('No videos found at %s' % self.videos_folder)
+            return -1
+        # Calculate the video frame sizes
+        cap = cv2.VideoCapture(videos_list[0])
+        _, sample_frame = cap.read()
+        self.frame_dim = sample_frame.shape
+        cap.release()
+        
+        # Calculate number of videos per row/col
+        self.Ny = int(np.sqrt(self.N_show_approx/self.screen_ratio * self.frame_dim[1]/self.frame_dim[0]))
+        self.Nx = int(np.sqrt(self.N_show_approx*self.screen_ratio * self.frame_dim[0]/self.frame_dim[1]))
+ 
+       # Load existing annotations
+        existing_annotations = self.load_annotations()
+        # Split the videos list into pages
+        self.video_pages = self.list_to_pages(videos_list, existing_annotations)
+        
+        # Load status
+        self.review_mode = False  # In review mode, the status is not saved
+        self.load_status()
  
         # Page direction (used for the cache)
         self.page_direction = +1
