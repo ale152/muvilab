@@ -471,8 +471,8 @@ class Annotator:
 
            
 if __name__ == '__main__':
-    annotator = Annotator([
-                {'name': 'sit down', 
+    videos_folder = r'./Videos'
+    labels = [{'name': 'sit down', 
                 'color': (0, 1, 0),
                 'event': cv2.EVENT_LBUTTONDOWN},
 
@@ -482,7 +482,6 @@ if __name__ == '__main__':
                  
                  {'name': 'ambiguous', 
                 'color': (0, 1, 1),
-                'event': cv2.EVENT_MBUTTONDOWN}
-                ], r'./Videos')
-
+                'event': cv2.EVENT_MBUTTONDOWN}]
+    annotator = Annotator(labels, videos_folder)
     annotator.main()
