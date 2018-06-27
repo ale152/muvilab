@@ -9,6 +9,7 @@ import numpy as np
 import cv2
 
 # BUG: The time bar messes up with the click coordinates where the user clicks
+# TODO: Status should save the first video in the page shown, rather than the page number!
 # TODO: Available labels should be saved in the status file
 # TODO: Add check labels are changed
 # TODO: Add check have different filenames
@@ -106,7 +107,7 @@ class Annotator:
             
                 # Load the next mosaic
                 next_page = self.current_page+self.page_direction
-                next_page = np.max((0, np.min((next_page, len(self.video_pages)-1))))
+                next_page = int(np.max((0, np.min((next_page, len(self.video_pages)-1)))))
                 # Only load the next page if it's different from the current one
                 if next_page != self.current_page:
                     current_mosaic = self.create_mosaic(next_page)
@@ -195,8 +196,8 @@ class Annotator:
         mosaic'''
         i_click = int(np.floor((y_click) / self.mosaic_dim[1] * self.Ny))
         j_click = int(np.floor((x_click) / self.mosaic_dim[2] * self.Nx))
-        i_click = np.min((np.max((0, i_click)), self.Ny-1))
-        j_click = np.min((np.max((0, j_click)), self.Nx-1))
+        i_click = int(np.min((np.max((0, i_click)), self.Ny-1)))
+        j_click = int(np.min((np.max((0, j_click)), self.Nx-1)))
         return i_click, j_click
 
     def set_label(self, label_text, label_color, x_click, y_click):
@@ -301,7 +302,7 @@ class Annotator:
             
             # Set the status
             self.current_page = status_page
-            self.current_page = np.max((0, np.min((self.current_page, len(self.video_pages)-1))))
+            self.current_page = int(np.max((0, np.min((self.current_page, len(self.video_pages)-1)))))
         else:
             # Start from page zero
             self.current_page = 0
