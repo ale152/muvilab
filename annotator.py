@@ -9,22 +9,13 @@ import numpy as np
 import cv2
 
 # BUG: The time bar messes up with the click coordinates where the user clicks
+# TODO: Deal with absolute/relative path of windows/linux in annotations
 # TODO: Status should save the first video in the page shown, rather than the page number!
-# TODO: Available labels should be saved in the status file
-# TODO: Add check have different filenames
 # TODO: Add check video file is a video file
 
 class Annotator:
-    '''Annotate multiple videos simultaneously by clicking on them. The current configuration
-    requires the videos to be in subfolders located in "videos_folder". The algorithm will loop
-    through the folders and load all the videos in them.
-    
-    /!\ LIMITATIONS /!\ 
-    This code was mainly written for my specific application and I decided to upload it on github
-    as it might be helpful for other people.
-    It assumes that all the videos are the same length (100 frames) and are black and white. I will
-    try to update the code to make it more general, according to the time available and the number
-    of requests.'''
+    '''Annotate multiple videos simultaneously by clicking on them.
+    See demo.py for a working example.'''
 
     def __init__(self, labels, videos_folder, annotation_file='labels.json',
                  status_file='status.json', video_ext=['.mp4', '.avi'],
