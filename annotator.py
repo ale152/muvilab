@@ -258,12 +258,16 @@ class Annotator:
         '''Load annotations from self.annotation_file'''
         if os.path.isfile(self.annotation_file):
             with open(self.annotation_file, 'r') as json_file:
-                annotations = json.load(json_file)
-                # Normalise the paths
-                for anno in annotations:
-                    anno['video'] = os.path.normpath(anno['video'])
+                try:
+                    annotations = json.load(json_file)
+                    # Normalise the paths
+                    for anno in annotations:
+                        anno['video'] = os.path.normpath(anno['video'])
                     
-            print('Existing annotation found: %d items loaded' % len(annotations))
+                    print('Existing annotation found: %d items loaded' % len(annotations))
+                except json.JSONDecodeError:
+                    print('Unable to load annotations from %s' % self.annotation_file)
+                    annotations = []
         else:
             print('No annotation found at %s' % self.annotation_file)
             annotations = []
