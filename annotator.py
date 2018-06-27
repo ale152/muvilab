@@ -255,6 +255,9 @@ class Annotator:
     def main(self):
         # Find video files in the video folder
         videos_list = self.find_videos()
+        if not videos_list:
+            print('No videos found at %s' % self.videos_folder)
+            return -1
         # Calculate the video frame sizes
         cap = cv2.VideoCapture(videos_list[0])
         _, sample_frame = cap.read()
