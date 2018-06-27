@@ -9,6 +9,7 @@ import numpy as np
 import cv2
 
 # BUG: The time bar messes up with the click coordinates where the user clicks
+# TODO: Available labels should be saved in the status file
 # TODO: Add check labels are changed
 # TODO: Add check have different filenames
 # TODO: Add check video file is a video file
@@ -41,7 +42,7 @@ class Annotator:
         self.screen_ratio = screen_ratio
         
         # Debug
-        self.debug_verbose = 1
+        self.debug_verbose = 0
 
     
     def find_videos(self):
@@ -388,6 +389,12 @@ class Annotator:
                     if chr(key_input) in {'r', 'R'}:
                         # Update self.video_pages using labelled data only
                         existing_annotations = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
+                        if not existing_annotations:
+                            # No annotations, no reviewing mode
+                            print('Please annotate some videos before entering reviewing mode')
+                            continue
+                        
+                        print('Entering reviewing mode. Press "q" to quit')
                         self.video_pages = self.list_to_pages(videos_list, existing_annotations, filter_label=True)
                         self.current_page = 0
                         self.review_mode = True
