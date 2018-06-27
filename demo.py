@@ -56,17 +56,17 @@ while cap.isOpened():
     
 # Run the annotator
 annotator = Annotator([
-        {'name': 'sit down', 
+        {'name': 'jump', 
         'color': (0, 1, 0),
         'event': cv2.EVENT_LBUTTONDOWN},
 
-        {'name': 'stand up', 
+        {'name': 'swirl', 
         'color': (0, 0, 1),
         'event': cv2.EVENT_LBUTTONDBLCLK},
          
-         {'name': 'ambiguous', 
+         {'name': 'back flip', 
         'color': (0, 1, 1),
         'event': cv2.EVENT_MBUTTONDOWN}
-        ], clips_folder, N_show_approx=30)
+        ], clips_folder, N_show_approx=12)
 
 annotator.main()
