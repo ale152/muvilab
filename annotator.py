@@ -51,7 +51,7 @@ class Annotator:
             for file in files:
                 fullfile_path = os.path.join(folder, file)
                 if os.path.splitext(fullfile_path)[1] in self.video_ext:
-                    videos_list.append(os.path.join(folder, file))
+                    videos_list.append(os.path.normpath(os.path.join(folder, file)))
                     
         return videos_list
 
@@ -269,6 +269,10 @@ class Annotator:
         if os.path.isfile(self.annotation_file):
             with open(self.annotation_file, 'r') as json_file:
                 existing_annotations = json.load(json_file)
+                # Normalise the paths
+                for anno in existing_annotations:
+                    anno['video'] = os.path.normpath(anno['video'])
+                    
             print('Existing annotation found: %d items loaded' % len(existing_annotations))
         else:
             print('No annotation found at %s' % self.annotation_file)
@@ -438,6 +442,6 @@ if __name__ == '__main__':
                  {'name': 'ambiguous', 
                 'color': (0, 1, 1),
                 'event': cv2.EVENT_MBUTTONDOWN}
-                ], r'G:\STS_sequences\Videos')
+                ], r'./Videos')
 
     annotator.main()
