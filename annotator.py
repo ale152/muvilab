@@ -9,7 +9,6 @@ import numpy as np
 import cv2
 
 # TODO: Add a preprocessing function that splits long videos into clips (like the demo)
-# TODO: Deal with absolute/relative path of windows/linux in annotations
 # TODO: Status should save the first video in the page shown, rather than the page number!
 # TODO: label using numbers on the keyboard. Press 1 and every click will be labelled as 1
 # TODO: Add check video file is a video file
@@ -254,10 +253,14 @@ class Annotator:
                 try:
                     annotations = json.load(json_file)
                     print('Existing annotation found: %d items' % len(annotations))
-                    # Normalise the paths and check that labels are valid
+                    # Check for absolute/relative paths of annotated videos and
+                    # make sure that labels are valid
                     valid_labels = {bf['name'] for bf in self.labels}
                     for anno in annotations:
-                        anno['video'] = os.path.normpath(anno['video'])
+                        # If the annotation has a relative path, it is relative
+                        # to the annotation file's folder
+                        if not os.path.isabs(anno['video']):
+                            anno['video'] = os.path.join(os.path.dirname(self.annotation_file), anno['video'])
                         
                         # Check if the label is part of the valid set
                         if anno['label'] and anno['label'] not in valid_labels:
@@ -464,7 +467,7 @@ class Annotator:
 
            
 if __name__ == '__main__':
-    videos_folder = r'G:\STS_sequences\Videos'
+    videos_folder = r'./Videos'
     labels = [{'name': 'sit down', 
                 'color': (0, 1, 0),
                 'event': cv2.EVENT_LBUTTONDOWN},
@@ -476,5 +479,5 @@ if __name__ == '__main__':
                  {'name': 'ambiguous', 
                 'color': (0, 1, 1),
                 'event': cv2.EVENT_MBUTTONDOWN}]
-    annotator = Annotator(labels, videos_folder, annotation_file=r"G:\STS_sequences\labels.json")
+    annotator = Annotator(labels, videos_folder)
     annotator.main()
