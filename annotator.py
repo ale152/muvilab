@@ -46,7 +46,7 @@ class Annotator:
             for file in files:
                 fullfile_path = os.path.join(folder, file)
                 if os.path.splitext(fullfile_path)[1] in self.video_ext:
-                    videos_list.append(os.path.realpath(os.path.join(folder, file)))
+                    videos_list.append(os.path.join(folder, file))
                     
         return videos_list
 
@@ -68,7 +68,7 @@ class Annotator:
                         # Add the video to the grid
                         video_pages[p][j][i]['video'] = videos_list[vid]
                         # Add the annotation to the grid
-                        anno = [bf for bf in annotations if bf['video'] == videos_list[vid]]
+                        anno = [bf for bf in annotations if os.path.samefile(bf['video'], videos_list[vid])]
                         if anno:
                             video_pages[p][j][i]['label'] = anno[0]['label']
                         # Go to the next element in the video_list
@@ -464,7 +464,7 @@ class Annotator:
 
            
 if __name__ == '__main__':
-    videos_folder = r'./Videos'
+    videos_folder = r'G:\STS_sequences\Videos'
     labels = [{'name': 'sit down', 
                 'color': (0, 1, 0),
                 'event': cv2.EVENT_LBUTTONDOWN},
@@ -476,5 +476,5 @@ if __name__ == '__main__':
                  {'name': 'ambiguous', 
                 'color': (0, 1, 1),
                 'event': cv2.EVENT_MBUTTONDOWN}]
-    annotator = Annotator(labels, videos_folder)
+    annotator = Annotator(labels, videos_folder, annotation_file=r"G:\STS_sequences\labels.json")
     annotator.main()
