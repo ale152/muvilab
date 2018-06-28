@@ -53,14 +53,21 @@ annotator = Annotator([
 annotator.main()
 ```
 
+The following paramters are requested for the labels:
+- **'name'**: the name of the label (e.g. thunder, red_car_crossing, jump)
+- **'color'**: a tuple of colours (B,G,R) to highligh the annotation on screen
+- **'event'**: the mouse action so associate to the label, from [OpenCV](https://docs.opencv.org/3.1.0/d7/dfc/group__highgui.html#ga927593befdddc7e7013602bca9b079b0)
+
 For a full list of possible events, please check [here](https://docs.opencv.org/3.1.0/d7/dfc/group__highgui.html#ga927593befdddc7e7013602bca9b079b0).
 
 While running, the following commands will be accepted:
-- **n**: Go to the **n**ext page
-- **b**: Go **b**ack to the previous page
-- **r**: Enter **r**eviewing mode
-- **q**: **Q**uit the program
+- **N**: Go to the **n**ext page
+- **B**: Go **b**ack to the previous page
+- **R**: Enter **r**eviewing mode
+- **Q**: **Q**uit the program
+
+When quitting the program, a status file will be saved including the last video that was labelled. Future runs of the application will start from that page.
 
 ## License
-MuViLab was developed while working for the SPHERE IRC project. 
+MuViLab was developed while working for the [SPHERE IRC project](https://www.irc-sphere.ac.uk/). 
 MuViLab is freely available for free non-commercial use, and may be redistributed under these conditions.
