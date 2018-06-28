@@ -8,7 +8,6 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
-# BUG: The time bar messes up with the click coordinates where the user clicks
 # TODO: Add a preprocessing function that splits long videos into clips (like the demo)
 # TODO: Deal with absolute/relative path of windows/linux in annotations
 # TODO: Status should save the first video in the page shown, rather than the page number!
