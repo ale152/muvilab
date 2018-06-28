@@ -9,8 +9,10 @@ import numpy as np
 import cv2
 
 # BUG: The time bar messes up with the click coordinates where the user clicks
+# TODO: Add a preprocessing function that splits long videos into clips (like the demo)
 # TODO: Deal with absolute/relative path of windows/linux in annotations
 # TODO: Status should save the first video in the page shown, rather than the page number!
+# TODO: label using numbers on the keyboard. Press 1 and every click will be labelled as 1
 # TODO: Add check video file is a video file
 
 class Annotator:
@@ -30,6 +32,9 @@ class Annotator:
         self.video_ext = video_ext
         self.N_show_approx = N_show_approx
         self.screen_ratio = screen_ratio
+
+        # Hard coded settings
+        self.timebar_h = 20  # Pixels
         
         # Debug
         self.debug_verbose = 0
@@ -183,8 +188,8 @@ class Annotator:
     def click_to_ij(self, x_click, y_click):
         '''Convert the x-y coordinates of the mouse into i-j elements of the 
         mosaic'''
-        i_click = int(np.floor((y_click) / self.mosaic_dim[1] * self.Ny))
-        j_click = int(np.floor((x_click) / self.mosaic_dim[2] * self.Nx))
+        i_click = int(np.floor((y_click-self.timebar_h) / self.mosaic.shape[1] * self.Ny))
+        j_click = int(np.floor((x_click) / self.mosaic.shape[2] * self.Nx))
         i_click = int(np.min((np.max((0, i_click)), self.Ny-1)))
         j_click = int(np.min((np.max((0, j_click)), self.Nx-1)))
         return i_click, j_click
@@ -234,7 +239,7 @@ class Annotator:
     
     def add_timebar(self, img, fraction, color=(0.2, 0.5, 1)):
         '''Add a timebar on the image'''
-        bar = np.zeros((20, img.shape[1], 3))
+        bar = np.zeros((self.timebar_h, img.shape[1], 3))
         idt = int(fraction*img.shape[1])
         bar[:, 0:idt, 0] = color[0]
         bar[:, 0:idt, 1] = color[1]
@@ -359,8 +364,6 @@ class Annotator:
             
             if self.debug_verbose == 1:
                 print('(Main) Mosaic received in the main loop')
-            
-            self.mosaic_dim = self.mosaic.shape
             
             # Update the rectangles
             self.update_rectangles()
