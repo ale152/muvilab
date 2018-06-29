@@ -36,19 +36,10 @@ To start MuViLab, simply import the class Annotator in your script, set up the l
 ```python
 from annotator import Annotator
 annotator = Annotator([
-        {'name': 'text_of_label_1', 
-        'color': (0, 1, 0),
-        'event': cv2.EVENT_LBUTTONDOWN},
-
-        {'name': 'text_of_label_2', 
-        'color': (0, 0, 1),
-        'event': cv2.EVENT_LBUTTONDBLCLK},
-         
-         {'name': 'text_of_label_3', 
-        'color': (0, 1, 1),
-        'event': cv2.EVENT_MBUTTONDOWN}
-        ], clips_folder, N_show_approx=100,
-        annotation_file='my_labels.json')
+        {'name': 'text_of_label_1', 'color': (0, 1, 0)},
+        {'name': 'text_of_label_2', 'color': (0, 0, 1)},
+        {'name': 'text_of_label_3', 'color': (0, 1, 1)}],
+        clips_folder, N_show_approx=100, annotation_file='my_labels.json')
 
 annotator.main()
 ```
@@ -56,14 +47,14 @@ annotator.main()
 The following paramters are requested for the labels:
 - **'name'**: the name of the label (e.g. thunder, red_car_crossing, jump)
 - **'color'**: a tuple of colours (B,G,R) to highligh the annotation on screen
-- **'event'**: the mouse action so associate to the label, from [OpenCV](https://docs.opencv.org/3.1.0/d7/dfc/group__highgui.html#ga927593befdddc7e7013602bca9b079b0)
-
-For a full list of possible events, please check [here](https://docs.opencv.org/3.1.0/d7/dfc/group__highgui.html#ga927593befdddc7e7013602bca9b079b0).
 
 While running, the following commands will be accepted:
+- **[1-9]**: Select a label to annotate videos
+- **Left Click**: Apply selected annotation
+- **Right Click**: Remove annotation
 - **N**: Go to the **n**ext page
 - **B**: Go **b**ack to the previous page
-- **R**: Enter **r**eviewing mode
+- **R**: Enter/exit **r**eviewing mode
 - **Q**: **Q**uit the program
 
 When quitting the program, a status file will be saved including the last video that was labelled. Future runs of the application will start from that page.
