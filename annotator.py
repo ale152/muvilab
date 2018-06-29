@@ -198,11 +198,10 @@ class Annotator:
     def click_callback(self, event, x_click, y_click, flags, param):
         '''Click callback that sets the lables based on the click'''
         
-        # Loop over the labels
-        for label in self.labels:
-            # Check the event
-            if event == label['event']:
-                self.set_label(label['name'], label['color'], x_click, y_click)
+        # Set the label
+        if event == cv2.EVENT_LBUTTONDOWN:
+            label = self.labels[self.selected_label]
+            self.set_label(label['name'], label['color'], x_click, y_click)
 
         # Detect right click to remove label
         if event == cv2.EVENT_RBUTTONDOWN:
@@ -217,6 +216,7 @@ class Annotator:
         i_click = int(np.min((np.max((0, i_click)), self.Ny-1)))
         j_click = int(np.min((np.max((0, j_click)), self.Nx-1)))
         return i_click, j_click
+
 
     def set_label(self, label_text, label_color, x_click, y_click):
         '''Set a specific label based on the user click input'''
