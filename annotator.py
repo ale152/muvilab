@@ -260,8 +260,8 @@ class Annotator:
                 continue
         
             # Convert vi into row and column
-            j = np.floor(vi/self.Ny)
-            j = np.mod(vi, self.Ny)
+            j = int(np.floor(vi/self.Ny))
+            i = int(np.mod(vi, self.Ny))
             # Add the rectangle
             p1 = (j*self.frame_dim[1], i*self.frame_dim[0])
             p2 = ((j+1)*self.frame_dim[1], (i+1)*self.frame_dim[0])
