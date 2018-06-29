@@ -324,6 +324,17 @@ class Annotator:
         return annotations
 
 
+    def show_label_guide(self):
+        '''Show the labels available with the keyboard key to select them'''
+        print('\n' + '-'*80)
+        print('Please press a number key to select a label and use left/right '
+              'click to add/remove labels')
+        print('Labels available:')
+        for li, label in enumerate(self.labels):
+            print(' - %d: %s' % (li+1, label['name']))
+        print('-'*80 + '\n')
+
+
     def load_status(self):
         '''Load the status from self.status_file and set self.current_page'''
         if os.path.isfile(self.status_file):
@@ -470,6 +481,7 @@ class Annotator:
         self.page_direction = +1  # Used for the cache preload
 
         # Initialise the GUI
+        self.show_label_guide()
         self.selected_label = 0
         cv2.namedWindow('MuViLab')
         cv2.setMouseCallback('MuViLab', self.click_callback)
