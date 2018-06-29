@@ -361,6 +361,18 @@ class Annotator:
             non_empty = [item for item in self.dataset if item['label']]
             json_file.write(json.dumps(non_empty, indent=1))
 
+    
+    def save_status(self):
+        '''Save the status into a json file'''
+        # Save the status
+        if not self.review_mode:
+            if self.debug_verbose == 1:
+                print('Saving status...')
+            with open(self.status_file, 'w+') as json_file:
+                status = {'time': time.time(),
+                          'page': self.current_page}
+                json_file.write(json.dumps(status, indent=1))
+
 
     def main(self):
         # Find video files in the video folder
@@ -486,15 +498,8 @@ class Annotator:
                         run_this_page = False
                         break
             
-            # Save the status
-            if not self.review_mode:
-                if self.debug_verbose == 1:
-                    print('Saving status...')
-                with open(self.status_file, 'w+') as json_file:
-                    status = {'time': time.time(),
-                              'page': self.current_page}
-                    json_file.write(json.dumps(status, indent=1))
-
+            # Save status and annotations
+            self.save_status()
             self.save_annotations()
             
             # Exit the program
