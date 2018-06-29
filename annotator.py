@@ -93,34 +93,6 @@ class Annotator:
                 p = int(np.floor(vid/(self.Nx*self.Ny)))
                 self.pagination[p].append(vid)
 
-    
-    def list_to_pages(self, videos_list, annotations, filter_label=False):
-        '''Split a list of videos into an array arranged by pages of mosaics'''
-        # Filter the videos by labels if requested
-        if filter_label:
-            videos_list = [bf['video'] for bf in annotations]
-
-        # Convert the list into a list of pages of grids
-        N_pages = int(np.ceil(len(videos_list)/self.Nx/self.Ny))
-        video_pages = [[[{'video': '', 'label': ''} for _ in range(self.Ny)] for _ in range(self.Nx)] for _ in range(N_pages)]
-        vid = 0
-        print('Generating video pages...')
-        for p in range(N_pages):
-            for j in range(self.Nx):
-                for i in range(self.Ny):
-                    if vid < len(videos_list):
-                        # Add the video to the grid
-                        video_pages[p][j][i]['video'] = videos_list[vid]
-                        # Add the annotation to the grid
-                        real_path = os.path.realpath(videos_list[vid])
-                        anno = [bf for bf in annotations if bf['video'] == real_path]
-                        if anno:
-                            video_pages[p][j][i]['label'] = anno[0]['label']
-                        # Go to the next element in the video_list
-                        vid += 1
-        
-        return video_pages
-
 
     def mosaic_thread(self, e_mosaic_ready, e_page_request, e_thread_off):
         '''This function is a wrapper for create_mosaic that runs in a separate
