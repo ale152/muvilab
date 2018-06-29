@@ -8,7 +8,6 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
-# TODO change delay according to timestamp
 # TODO: Add a preprocessing function that splits long videos into clips (like the demo)
 # TODO: label using numbers on the keyboard. Press 1 and every click will be labelled as 1
 # TODO: Add check video file is a video file
