@@ -132,7 +132,7 @@ class Annotator:
             
                 # Load the next mosaic
                 next_page = self.current_page+self.page_direction
-                next_page = int(np.max((0, np.min((next_page, len(self.video_pages)-1)))))
+                next_page = int(np.max((0, np.min((next_page, self.N_pages-1)))))
                 # Only load the next page if it's different from the current one
                 if next_page != self.current_page:
                     current_mosaic = self.create_mosaic(next_page)
@@ -332,7 +332,7 @@ class Annotator:
                     print('Error while loading the status file.')
             
             # Set the status
-            self.current_page = int(np.max((0, np.min((status_page, len(self.N_pages)-1)))))
+            self.current_page = int(np.max((0, np.min((status_page, self.N_pages-1)))))
         else:
             # Start from page zero
             self.current_page = 0
@@ -405,7 +405,7 @@ class Annotator:
             # Update the rectangles
             self.update_rectangles()
             
-            print('Showing page %d of %d' % (self.current_page, len(self.video_pages)))
+            print('Showing page %d of %d' % (self.current_page, self.N_pages))
             
             # GUI loop
             run_this_page = True
@@ -430,7 +430,7 @@ class Annotator:
                         continue
                     
                     if chr(key_input) in {'n', 'N'}:
-                        if self.current_page < len(self.video_pages)-1:
+                        if self.current_page < self.N_pages-1:
                             self.current_page += 1
                             self.page_direction = +1
                             run_this_page = False
