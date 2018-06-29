@@ -230,8 +230,10 @@ class Annotator:
         # Find the indices of the clicked sequence
         i_click, j_click = self.click_to_ij(x_click, y_click)
         
-        # Create the label
-        self.video_pages[self.current_page][j_click][i_click]['label'] = label_text
+        # Convert i and j click into a single index
+        vid_in_page = self.pagination[self.current_page]
+        ind_click  = j_click*self.Ny + i_click
+        self.dataset[vid_in_page[ind_click]]['label'] = label_text
         
         # Update the rectangles
         self.update_rectangles()
