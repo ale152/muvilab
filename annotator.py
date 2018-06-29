@@ -474,7 +474,7 @@ class Annotator:
             # Update the rectangles
             self.update_rectangles()
             
-            print('Showing page %d of %d' % (self.current_page, self.N_pages))
+            print('Showing page %d/%d' % (self.current_page+1, self.N_pages))
             
             # GUI loop
             run_this_page = True
