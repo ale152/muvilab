@@ -50,6 +50,22 @@ class Annotator:
         return videos_list
 
     
+    def build_dataset(self, videos_list, annotations):
+        '''Creates the self.dataset array, containing a list of videos with the
+        respective annotations'''
+        N_videos = len(videos_list)
+        self.dataset = [{'video': '', 'label': ''} for _ in range(N_videos)]
+        print('Generating dataset array...')
+        for vid in range(N_videos):
+            # Add the video to the dataset
+            self.dataset[vid]['video'] = videos_list[vid]
+            # Add label to the dataset by checking that the realpath is the same
+            real_path = os.path.realpath(videos_list[vid])
+            anno = [bf for bf in annotations if bf['video'] == real_path]
+            if anno:
+                self.dataset[vid]['label'] = anno[0]['label']
+
+
     def build_pagination(self, filter_label=False):
         '''Take a list of videos in input and create a pagination array that
         splits the videos into pages'''
@@ -341,9 +357,11 @@ class Annotator:
         self.Nx = int(np.sqrt(self.N_show_approx*self.screen_ratio * self.frame_dim[0]/self.frame_dim[1]))
  
        # Load existing annotations
-        existing_annotations = self.load_annotations()
+        existing_annotations = self.load_annotations() # TODO check this function
 
         # Split the videos list into pages
+        self.build_dataset(videos_list, existing_annotations)
+        self.build_pagination()
         self.video_pages = self.list_to_pages(videos_list, existing_annotations)
         
         # Load status
@@ -486,7 +504,7 @@ class Annotator:
 
            
 if __name__ == '__main__':
-    videos_folder = r'./Videos'
+    videos_folder = r'G:\STS_sequences\Videos'
     labels = [{'name': 'sit down', 
                 'color': (0, 1, 0),
                 'event': cv2.EVENT_LBUTTONDOWN},
