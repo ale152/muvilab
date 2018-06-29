@@ -9,7 +9,6 @@ import numpy as np
 import cv2
 
 # TODO: Add a preprocessing function that splits long videos into clips (like the demo)
-# TODO: label using numbers on the keyboard. Press 1 and every click will be labelled as 1
 # TODO: Add check video file is a video file
 
 class Annotator:
@@ -291,7 +290,7 @@ class Annotator:
         '''Load annotations from self.annotation_file'''
         if not os.path.isfile(self.annotation_file):
             print('No annotation found at %s' % self.annotation_file)
-            annotations = []
+            return []
             
         with open(self.annotation_file, 'r') as json_file:
             try:
@@ -299,7 +298,7 @@ class Annotator:
                 print('Existing annotation found: %d items' % len(annotations))
             except json.JSONDecodeError:
                 print('Unable to load annotations from %s' % self.annotation_file)
-                annotations = []
+                return []
             
         # Check for absolute/relative paths of annotated videos and
         # make sure that labels are valid
@@ -318,8 +317,7 @@ class Annotator:
                 print(('Found label "%s" in %s, not compatible with %s. ' +
                       'All the labels will be discarded') %
                       (anno['label'], self.annotation_file, valid_labels))
-                annotations = []
-                break
+                return []
             
         return annotations
 
