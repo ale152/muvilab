@@ -343,6 +343,23 @@ class Annotator:
         else:
             # Start from page zero
             self.current_page = 0
+            
+    
+    def save_annotations(self):
+        '''Save the annotations into a json file'''
+        # Backup of the annotations first
+        if self.debug_verbose == 1:
+            print('Backing up annotations...')
+        if os.path.isfile(self.annotation_file):
+            copyfile(self.annotation_file, self.annotation_file+'.backup')
+
+        # Save the annotations
+        if self.debug_verbose == 1:
+            print('Saving annotations...')
+        with open(self.annotation_file, 'w+') as json_file:
+            # Save non empty labels only
+            non_empty = [item for item in self.dataset if item['label']]
+            json_file.write(json.dumps(non_empty, indent=1))
 
 
     def main(self):
@@ -478,19 +495,7 @@ class Annotator:
                               'page': self.current_page}
                     json_file.write(json.dumps(status, indent=1))
 
-            # Backup of the annotations
-            if self.debug_verbose == 1:
-                print('Backing up annotations...')
-            if os.path.isfile(self.annotation_file):
-                copyfile(self.annotation_file, self.annotation_file+'.backup')
-
-            # Save the annotations
-            if self.debug_verbose == 1:
-                print('Saving annotations...')
-            with open(self.annotation_file, 'w+') as json_file:
-                # Save non empty labels only
-                non_empty = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
-                json_file.write(json.dumps(non_empty, indent=1))
+            self.save_annotations()
             
             # Exit the program
             if run is None:
