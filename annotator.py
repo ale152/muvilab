@@ -552,15 +552,12 @@ class Annotator:
 if __name__ == '__main__':
     videos_folder = r'G:\STS_sequences\Videos'
     labels = [{'name': 'sit down', 
-                'color': (0, 1, 0),
-                'event': cv2.EVENT_LBUTTONDOWN},
+                'color': (0, 1, 0)},
 
                 {'name': 'stand up', 
-                'color': (0, 0, 1),
-                'event': cv2.EVENT_LBUTTONDBLCLK},
+                'color': (0, 0, 1)},
                  
                  {'name': 'ambiguous', 
-                'color': (0, 1, 1),
-                'event': cv2.EVENT_MBUTTONDOWN}]
+                'color': (0, 1, 1)}]
     annotator = Annotator(labels, videos_folder)
     annotator.main()
