@@ -198,11 +198,10 @@ class Annotator:
     def click_callback(self, event, x_click, y_click, flags, param):
         '''Click callback that sets the lables based on the click'''
         
-        # Loop over the labels
-        for label in self.labels:
-            # Check the event
-            if event == label['event']:
-                self.set_label(label['name'], label['color'], x_click, y_click)
+        # Set the label
+        if event == cv2.EVENT_LBUTTONDOWN:
+            label = self.labels[self.selected_label]
+            self.set_label(label['name'], label['color'], x_click, y_click)
 
         # Detect right click to remove label
         if event == cv2.EVENT_RBUTTONDOWN:
@@ -217,6 +216,7 @@ class Annotator:
         i_click = int(np.min((np.max((0, i_click)), self.Ny-1)))
         j_click = int(np.min((np.max((0, j_click)), self.Nx-1)))
         return i_click, j_click
+
 
     def set_label(self, label_text, label_color, x_click, y_click):
         '''Set a specific label based on the user click input'''
@@ -324,6 +324,17 @@ class Annotator:
         return annotations
 
 
+    def show_label_guide(self):
+        '''Show the labels available with the keyboard key to select them'''
+        print('\n' + '-'*80)
+        print('Please press a number key to select a label and use left/right '
+              'click to add/remove labels')
+        print('Labels available:')
+        for li, label in enumerate(self.labels):
+            print(' - %d: %s' % (li+1, label['name']))
+        print('-'*80 + '\n')
+
+
     def load_status(self):
         '''Load the status from self.status_file and set self.current_page'''
         if os.path.isfile(self.status_file):
@@ -397,6 +408,15 @@ class Annotator:
                 self.current_page -= 1
                 self.page_direction = -1
                 run_this_page = False
+                
+        # Select label
+        if chr(key_input) in {chr(d) for d in range(ord('0'),ord('9')+1)}:
+
+            if int(chr(key_input)) > len(self.labels):
+                print('Error: label %s not implemented' % chr(key_input))
+            else:
+                self.selected_label = int(chr(key_input))-1
+                print('Label selected: %s' % self.labels[self.selected_label]['name'])
         
         # Reviewing mode
         if chr(key_input) in {'r', 'R'}:
@@ -461,6 +481,8 @@ class Annotator:
         self.page_direction = +1  # Used for the cache preload
 
         # Initialise the GUI
+        self.show_label_guide()
+        self.selected_label = 0
         cv2.namedWindow('MuViLab')
         cv2.setMouseCallback('MuViLab', self.click_callback)
         
@@ -541,16 +563,8 @@ class Annotator:
            
 if __name__ == '__main__':
     videos_folder = r'G:\STS_sequences\Videos'
-    labels = [{'name': 'sit down', 
-                'color': (0, 1, 0),
-                'event': cv2.EVENT_LBUTTONDOWN},
-
-                {'name': 'stand up', 
-                'color': (0, 0, 1),
-                'event': cv2.EVENT_LBUTTONDBLCLK},
-                 
-                 {'name': 'ambiguous', 
-                'color': (0, 1, 1),
-                'event': cv2.EVENT_MBUTTONDOWN}]
+    labels = [{'name': 'sit down', 'color': (0, 1, 0)},
+              {'name': 'stand up', 'color': (0, 0, 1)},                 
+              {'name': 'ambiguous', 'color': (0, 1, 1)}]
     annotator = Annotator(labels, videos_folder)
     annotator.main()

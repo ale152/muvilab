@@ -67,18 +67,9 @@ if not os.path.exists(os.path.join(clips_folder, clip_filename % 0)):
     
 # Run the annotator
 annotator = Annotator([
-        {'name': 'result_table', 
-        'color': (0, 1, 0),
-        'event': cv2.EVENT_LBUTTONDOWN},
-
-        {'name': 'olympics_logo', 
-        'color': (0, 0, 1),
-        'event': cv2.EVENT_LBUTTONDBLCLK},
-         
-         {'name': 'stretching', 
-        'color': (0, 1, 1),
-        'event': cv2.EVENT_MBUTTONDOWN}
-        ], clips_folder, N_show_approx=100,
-        annotation_file='demo_labels.json')
+        {'name': 'result_table', 'color': (0, 1, 0)},
+        {'name': 'olympics_logo', 'color': (0, 0, 1)},
+        {'name': 'stretching', 'color': (0, 1, 1)}],
+        clips_folder, N_show_approx=100, annotation_file='demo_labels.json')
 
 annotator.main()
