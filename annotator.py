@@ -75,7 +75,7 @@ class Annotator:
             p = 0
             for vid in range(len(self.dataset)):                 
                 # Add a new page
-                if len(self.pagination[p]) == (self.Nx*self.Ny-1):
+                if len(self.pagination[p]) == self.Nx*self.Ny:
                     self.pagination.append([])
                     p += 1
                     
@@ -83,7 +83,7 @@ class Annotator:
                 if self.dataset[vid]['label']:
                     self.pagination[p].append(vid)
                 
-            self.N_pages = p
+            self.N_pages = p+1
 
         else:
             # Convert the list into a list of pages of grids
@@ -389,6 +389,8 @@ class Annotator:
 
     def process_keyboard_input(self, key_input, run):
         '''Deal with the user keyboard input'''
+        run_this_page = True
+        
         # Next page
         if chr(key_input) in {'n', 'N'}:
             if self.current_page < self.N_pages-1:
@@ -409,7 +411,9 @@ class Annotator:
             if self.review_mode:
                 # Exit review mode
                 self.build_pagination(filter_label=False)
+                self.current_page = 0
                 self.review_mode = False
+                run_this_page = False
             else:
                 # Update the pagination using labelled videos only
                 self.build_pagination(filter_label=True)
