@@ -321,7 +321,7 @@ class Annotator:
                     status_time = data['time']
                     status_page = data['page']
                     print('Status file found at %s. Loading from page %d' %
-                          (status_time, status_page))
+                          (time.ctime(status_time), status_page))
                 except json.JSONDecodeError:
                     status_page = 0
                     print('Error while loading the status file.')
