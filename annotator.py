@@ -60,6 +60,7 @@ class Annotator:
         N_pages = int(np.ceil(len(videos_list)/self.Nx/self.Ny))
         video_pages = [[[{'video': '', 'label': ''} for _ in range(self.Ny)] for _ in range(self.Nx)] for _ in range(N_pages)]
         vid = 0
+        print('Generating video pages...')
         for p in range(N_pages):
             for j in range(self.Nx):
                 for i in range(self.Ny):
@@ -67,7 +68,8 @@ class Annotator:
                         # Add the video to the grid
                         video_pages[p][j][i]['video'] = videos_list[vid]
                         # Add the annotation to the grid
-                        anno = [bf for bf in annotations if os.path.samefile(bf['video'], videos_list[vid])]
+                        real_path = os.path.realpath(videos_list[vid])
+                        anno = [bf for bf in annotations if bf['video'] == real_path]
                         if anno:
                             video_pages[p][j][i]['label'] = anno[0]['label']
                         # Go to the next element in the video_list
@@ -261,6 +263,8 @@ class Annotator:
                         # to the annotation file's folder
                         if not os.path.isabs(anno['video']):
                             anno['video'] = os.path.join(os.path.dirname(self.annotation_file), anno['video'])
+                        
+                        anno['video'] = os.path.realpath(anno['video'])
                         
                         # Check if the label is part of the valid set
                         if anno['label'] and anno['label'] not in valid_labels:
