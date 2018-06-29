@@ -397,6 +397,15 @@ class Annotator:
                 self.current_page -= 1
                 self.page_direction = -1
                 run_this_page = False
+                
+        # Select label
+        if chr(key_input) in {chr(d) for d in range(ord('0'),ord('9')+1)}:
+
+            if int(chr(key_input)) > len(self.labels):
+                print('Error: label %s not implemented' % chr(key_input))
+            else:
+                self.selected_label = int(chr(key_input))-1
+                print('Label selected: %s' % self.labels[self.selected_label]['name'])
         
         # Reviewing mode
         if chr(key_input) in {'r', 'R'}:
@@ -461,6 +470,7 @@ class Annotator:
         self.page_direction = +1  # Used for the cache preload
 
         # Initialise the GUI
+        self.selected_label = 0
         cv2.namedWindow('MuViLab')
         cv2.setMouseCallback('MuViLab', self.click_callback)
         
