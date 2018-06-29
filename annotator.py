@@ -267,7 +267,14 @@ class Annotator:
             self.rectangles.append({'p1': p1, 'p2': p2, 
                           'color': label_color, 'label': label_text})
 
-    
+
+    def draw_anno_box(self, img):
+        for rec in self.rectangles:
+            cv2.rectangle(img, rec['p1'], rec['p2'], rec['color'], self.rect_bord)
+            textpt = (rec['p1'][0]+10, rec['p1'][1]+15)
+            cv2.putText(img, rec['label'], textpt, cv2.FONT_HERSHEY_SIMPLEX, 0.4, rec['color'])
+
+
     def add_timebar(self, img, fraction, color=(0.2, 0.5, 1)):
         '''Add a timebar on the image'''
         bar = np.zeros((self.timebar_h, img.shape[1], 3))
@@ -449,8 +456,8 @@ class Annotator:
         self.page_direction = +1
 
         # Initialise the GUI
-        cv2.namedWindow('MuViDat')
-        cv2.setMouseCallback('MuViDat', self.click_callback)
+        cv2.namedWindow('MuViLab')
+        cv2.setMouseCallback('MuViLab', self.click_callback)
         
         # Define events and thread
         e_mosaic_ready = threading.Event()  # Tells the main when the mosaic is ready to be shown
@@ -491,16 +498,11 @@ class Annotator:
             while run_this_page:
                 for f in range(self.mosaic.shape[0]):
                     img = np.copy(self.mosaic[f, ...])
-                    # Add rectangle to display selected sequence
-                    for rec in self.rectangles:
-                        cv2.rectangle(img, rec['p1'], rec['p2'], rec['color'], self.rect_bord)
-                        textpt = (rec['p1'][0]+10, rec['p1'][1]+15)
-                        cv2.putText(img, rec['label'], textpt, cv2.FONT_HERSHEY_SIMPLEX, 0.4, rec['color'])
-                    
-                    # Add a timebar
+                    # Draw annotation box and timebar
+                    self.draw_anno_box(img)
                     img = self.add_timebar(img, f/self.mosaic.shape[0])
                     
-                    cv2.imshow('MuViDat', img)
+                    cv2.imshow('MuViLab', img)
                     
                     # Deal with the keyboard input
                     key_input = cv2.waitKey(30)
