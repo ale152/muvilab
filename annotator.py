@@ -103,6 +103,7 @@ class Annotator:
         simply returns the cached image, load the next one and waits.'''
         e_thread_off.clear()
         cold_start = True
+        self.delete_cache = False
         while self.run_thread:
             # A cold_start is when no images are in memory. Simply load the current page
             if cold_start:
@@ -112,7 +113,7 @@ class Annotator:
                 cold_start = False
 
             # If the page in cache is the page requested, show it
-            if page_in_cache == self.current_page:
+            if not self.delete_cache and page_in_cache == self.current_page:
                 self.mosaic = current_mosaic
                 e_mosaic_ready.set()
             
@@ -128,6 +129,7 @@ class Annotator:
                 e_page_request.wait()
             else:
                 cold_start = True
+                self.delete_cache = False
         
         if self.debug_verbose == 1:
             print('(Thread) The thread is dying now :(') 
@@ -386,6 +388,7 @@ class Annotator:
                 self.build_pagination(filter_label=False)
                 self.current_page = 0
                 self.review_mode = False
+                self.delete_cache = True
                 run_this_page = False
             else:
                 # Update the pagination using labelled videos only
@@ -393,6 +396,7 @@ class Annotator:
                 print('Entering reviewing mode. Press "r" again to quit')
                 self.current_page = 0
                 self.review_mode = True
+                self.delete_cache = True
                 run_this_page = False
 
         # Quit
