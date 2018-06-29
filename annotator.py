@@ -34,7 +34,7 @@ class Annotator:
 
         # Hard coded settings
         self.timebar_h = 20  # Pixels
-        
+        self.rect_bord = 4  # Rectangle border
         # Debug
         self.debug_verbose = 0
 
@@ -259,8 +259,9 @@ class Annotator:
             j = int(np.floor(vi/self.Ny))
             i = int(np.mod(vi, self.Ny))
             # Add the rectangle
-            p1 = (j*self.frame_dim[1], i*self.frame_dim[0])
-            p2 = ((j+1)*self.frame_dim[1], (i+1)*self.frame_dim[0])
+            hb = int(self.rect_bord/2)  # Half border
+            p1 = (j*self.frame_dim[1] + hb, i*self.frame_dim[0] + hb)
+            p2 = ((j+1)*self.frame_dim[1] - hb, (i+1)*self.frame_dim[0] - hb)
             label_text = video['label']
             label_color = [bf['color'] for bf in self.labels if bf['name'] == label_text][0]
             self.rectangles.append({'p1': p1, 'p2': p2, 
@@ -492,7 +493,7 @@ class Annotator:
                     img = np.copy(self.mosaic[f, ...])
                     # Add rectangle to display selected sequence
                     for rec in self.rectangles:
-                        cv2.rectangle(img, rec['p1'], rec['p2'], rec['color'], 4)
+                        cv2.rectangle(img, rec['p1'], rec['p2'], rec['color'], self.rect_bord)
                         textpt = (rec['p1'][0]+10, rec['p1'][1]+15)
                         cv2.putText(img, rec['label'], textpt, cv2.FONT_HERSHEY_SIMPLEX, 0.4, rec['color'])
                     
