@@ -150,9 +150,9 @@ class Annotator:
 
 
     def create_mosaic(self, page):
-        '''This function loads videos and arrange them into a mosaic. The videos
-        are taken from self.video_pages, the input argument page'''
-        videos_list = [item['video'] for sublist in self.video_pages[page] for item in sublist]
+        '''This function loads videos and arrange them into a mosaic.'''
+        # Select the videos from the pagination
+        videos_list = [self.dataset[vid]['video'] for vid in self.pagination[page]]
         init = True
         # Loop over all the video files in the day folder
         for vi, video_file in enumerate(videos_list):
