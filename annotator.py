@@ -71,6 +71,7 @@ class Annotator:
         splits the videos into pages'''
         # Filter the videos by labels if requested
         if filter_label:
+            # TODO: This could be done in a more efficient way by preallocating pagination
             self.pagination = [[]]
             p = 0
             for vid in range(len(self.dataset)):                 
@@ -86,7 +87,7 @@ class Annotator:
             self.N_pages = p+1
 
         else:
-            # Convert the list into a list of pages of grids
+            # Create the pagination
             self.N_pages = int(np.ceil(len(self.dataset)/(self.Nx*self.Ny)))
             self.pagination = [[] for _ in range(self.N_pages)]
             for vid in range(len(self.dataset)):
