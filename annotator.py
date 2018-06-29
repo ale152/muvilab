@@ -9,7 +9,6 @@ import numpy as np
 import cv2
 
 # TODO: Add a preprocessing function that splits long videos into clips (like the demo)
-# TODO: Status should save the first video in the page shown, rather than the page number!
 # TODO: label using numbers on the keyboard. Press 1 and every click will be labelled as 1
 # TODO: Add check video file is a video file
 
@@ -319,15 +318,20 @@ class Annotator:
                     data = json.load(json_file)
                     # Load the status
                     status_time = data['time']
-                    status_page = data['page']
-                    print('Status file found at %s. Loading from page %d' %
-                          (time.ctime(status_time), status_page))
+                    status_vid = data['first_video_id']
+                    print('Status file found at %s. Loading from video %d of %d' %
+                          (time.ctime(status_time), status_vid, len(self.dataset)))
                 except json.JSONDecodeError:
-                    status_page = 0
+                    status_vid = 0
                     print('Error while loading the status file.')
             
-            # Set the status
-            self.current_page = int(np.max((0, np.min((status_page, self.N_pages-1)))))
+            # Find the page of the video saved in the status
+            for p in range(len(self.pagination)):
+                if status_vid in self.pagination[p]:
+                    self.current_page = p
+                    break
+                
+            self.current_page = int(np.max((0, np.min((self.current_page, self.N_pages-1)))))
         else:
             # Start from page zero
             self.current_page = 0
@@ -358,7 +362,7 @@ class Annotator:
                 print('Saving status...')
             with open(self.status_file, 'w+') as json_file:
                 status = {'time': time.time(),
-                          'page': self.current_page}
+                          'first_video_id': self.pagination[self.current_page][0]}
                 json_file.write(json.dumps(status, indent=1))
 
 
