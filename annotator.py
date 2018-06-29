@@ -276,37 +276,37 @@ class Annotator:
 
     def load_annotations(self):
         '''Load annotations from self.annotation_file'''
-        if os.path.isfile(self.annotation_file):
-            with open(self.annotation_file, 'r') as json_file:
-                try:
-                    annotations = json.load(json_file)
-                    print('Existing annotation found: %d items' % len(annotations))
-                    # Check for absolute/relative paths of annotated videos and
-                    # make sure that labels are valid
-                    valid_labels = {bf['name'] for bf in self.labels}
-                    for anno in annotations:
-                        # If the annotation has a relative path, it is relative
-                        # to the annotation file's folder
-                        if not os.path.isabs(anno['video']):
-                            anno['video'] = os.path.join(os.path.dirname(self.annotation_file), anno['video'])
-                        
-                        anno['video'] = os.path.realpath(anno['video'])
-                        
-                        # Check if the label is part of the valid set
-                        if anno['label'] and anno['label'] not in valid_labels:
-                            print(('Found label "%s" in %s, not compatible with %s. ' +
-                                  'All the labels will be discarded') %
-                                  (anno['label'], self.annotation_file, valid_labels))
-                            annotations = []
-                            break
-                    
-                    
-                except json.JSONDecodeError:
-                    print('Unable to load annotations from %s' % self.annotation_file)
-                    annotations = []
-        else:
+        if not os.path.isfile(self.annotation_file):
             print('No annotation found at %s' % self.annotation_file)
             annotations = []
+            
+        with open(self.annotation_file, 'r') as json_file:
+            try:
+                annotations = json.load(json_file)
+                print('Existing annotation found: %d items' % len(annotations))
+            except json.JSONDecodeError:
+                print('Unable to load annotations from %s' % self.annotation_file)
+                annotations = []
+            
+        # Check for absolute/relative paths of annotated videos and
+        # make sure that labels are valid
+        valid_labels = {bf['name'] for bf in self.labels}
+        for anno in annotations:
+            # If the annotation has a relative path, it is relative to the 
+            # annotation file's folder
+            if not os.path.isabs(anno['video']):
+                anno['video'] = os.path.join(os.path.dirname(self.annotation_file), anno['video'])
+            
+            # Resolve path to allow future string comparison
+            anno['video'] = os.path.realpath(anno['video'])
+            
+            # Check if the label is part of the valid set
+            if anno['label'] and anno['label'] not in valid_labels:
+                print(('Found label "%s" in %s, not compatible with %s. ' +
+                      'All the labels will be discarded') %
+                      (anno['label'], self.annotation_file, valid_labels))
+                annotations = []
+                break
             
         return annotations
 
