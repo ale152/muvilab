@@ -252,20 +252,23 @@ class Annotator:
     def update_rectangles(self):
         '''Update the rectangles shown in the gui according to the labels'''
         # Reset rectangles
-        self.rectangles = [[[] for _ in range(self.Ny)] for _ in range(self.Nx)]
+        self.rectangles = []
+        videos_list = [self.dataset[vid] for vid in self.pagination[self.current_page]]
         # Find the items labelled in the current page
-        for j in range(self.Nx):
-            for i in range(self.Ny):
-                if not self.video_pages[self.current_page][j][i]['label']:
-                    continue
-            
-                # Add the rectangle
-                p1 = (j*self.frame_dim[1], i*self.frame_dim[0])
-                p2 = ((j+1)*self.frame_dim[1], (i+1)*self.frame_dim[0])
-                label_text = self.video_pages[self.current_page][j][i]['label']
-                label_color = [bf['color'] for bf in self.labels if bf['name'] == label_text][0]
-                self.rectangles[j][i] = {'p1': p1, 'p2': p2, 
-                              'color': label_color, 'label': label_text}
+        for vi, video in enumerate(videos_list):
+            if not video['label']:
+                continue
+        
+            # Convert vi into row and column
+            j = np.floor(vi/self.Ny)
+            j = np.mod(vi, self.Ny)
+            # Add the rectangle
+            p1 = (j*self.frame_dim[1], i*self.frame_dim[0])
+            p2 = ((j+1)*self.frame_dim[1], (i+1)*self.frame_dim[0])
+            label_text = video['label']
+            label_color = [bf['color'] for bf in self.labels if bf['name'] == label_text][0]
+            self.rectangles.append({'p1': p1, 'p2': p2, 
+                          'color': label_color, 'label': label_text})
 
     
     def add_timebar(self, img, fraction, color=(0.2, 0.5, 1)):
@@ -413,8 +416,7 @@ class Annotator:
                 for f in range(self.mosaic.shape[0]):
                     img = np.copy(self.mosaic[f, ...])
                     # Add rectangle to display selected sequence
-                    rec_list = [item for sublist in self.rectangles for item in sublist if item]
-                    for rec in rec_list:
+                    for rec in self.rectangles:
                         cv2.rectangle(img, rec['p1'], rec['p2'], rec['color'], 4)
                         textpt = (rec['p1'][0]+10, rec['p1'][1]+15)
                         cv2.putText(img, rec['label'], textpt, cv2.FONT_HERSHEY_SIMPLEX, 0.4, rec['color'])
