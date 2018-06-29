@@ -8,6 +8,7 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
+# TODO change delay according to timestamp
 # TODO: Add a preprocessing function that splits long videos into clips (like the demo)
 # TODO: label using numbers on the keyboard. Press 1 and every click will be labelled as 1
 # TODO: Add check video file is a video file
@@ -18,7 +19,7 @@ class Annotator:
 
     def __init__(self, labels, videos_folder, annotation_file='labels.json',
                  status_file='status.json', video_ext=['.mp4', '.avi'],
-                 N_show_approx=100, screen_ratio=16/9):
+                 N_show_approx=100, screen_ratio=16/9, image_resize=1):
         
         self.labels = labels
         
@@ -29,6 +30,7 @@ class Annotator:
         self.video_ext = video_ext
         self.N_show_approx = N_show_approx
         self.screen_ratio = screen_ratio
+        self.image_resize = image_resize
 
         # Hard coded settings
         self.timebar_h = 20  # Pixels
@@ -155,7 +157,10 @@ class Annotator:
             
             # Load the video frames
             while cap.isOpened():
-                ret, frame = cap.read()
+                _, frame = cap.read()
+                
+                if self.image_resize != 1:
+                    frame = cv2.resize(frame, (0, 0), fx=self.image_resize, fy=self.image_resize)
                 
                 # Initialise the video            
                 if init:
@@ -421,7 +426,7 @@ class Annotator:
         # Calculate the video frame sizes
         cap = cv2.VideoCapture(videos_list[0])
         _, sample_frame = cap.read()
-        self.frame_dim = sample_frame.shape
+        self.frame_dim = [int(bf*self.image_resize) for bf in sample_frame.shape]
         cap.release()
         
         # Calculate number of videos per row/col
