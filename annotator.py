@@ -374,6 +374,45 @@ class Annotator:
                 json_file.write(json.dumps(status, indent=1))
 
 
+    def process_keyboard_input(self, key_input, run):
+        '''Deal with the user keyboard input'''
+        # Next page
+        if chr(key_input) in {'n', 'N'}:
+            if self.current_page < self.N_pages-1:
+                self.current_page += 1
+                self.page_direction = +1
+                run_this_page = False
+                
+        # Previous page
+        if chr(key_input) in {'b', 'B'}:
+            if self.current_page > 0:
+                self.current_page -= 1
+                self.page_direction = -1
+                run_this_page = False
+        
+        # Reviewing mode
+        if chr(key_input) in {'r', 'R'}:
+            # Check if review_mode is active
+            if self.review_mode:
+                # Exit review mode
+                self.build_pagination(filter_label=False)
+                self.review_mode = False
+            else:
+                # Update the pagination using labelled videos only
+                self.build_pagination(filter_label=True)
+                print('Entering reviewing mode. Press "r" again to quit')
+                self.current_page = 0
+                self.review_mode = True
+                run_this_page = False
+
+        # Quit
+        if chr(key_input) in {'q', 'Q'}:
+            run = None
+            run_this_page = False
+                
+        return run_this_page, run
+
+
     def main(self):
         # Find video files in the video folder
         videos_list = self.find_videos()
@@ -463,39 +502,8 @@ class Annotator:
                     key_input = cv2.waitKey(30)
                     if key_input == -1:
                         continue
-                    
-                    if chr(key_input) in {'n', 'N'}:
-                        if self.current_page < self.N_pages-1:
-                            self.current_page += 1
-                            self.page_direction = +1
-                            run_this_page = False
-                            break
-                        
-                    if chr(key_input) in {'b', 'B'}:
-                            if self.current_page > 0:
-                                self.current_page -= 1
-                                self.page_direction = -1
-                                run_this_page = False
-                                break
-                        
-                    if chr(key_input) in {'q', 'Q'}:
-                        run = None
-                        run_this_page = False
-                        break
-                        
-                    if chr(key_input) in {'r', 'R'}:
-                        # Update self.video_pages using labelled data only
-                        existing_annotations = [item for page in self.video_pages for sublist in page for item in sublist if item['label']]
-                        if not existing_annotations:
-                            # No annotations, no reviewing mode
-                            print('Please annotate some videos before entering reviewing mode')
-                            continue
-                        
-                        print('Entering reviewing mode. Press "q" to quit')
-                        self.video_pages = self.list_to_pages(videos_list, existing_annotations, filter_label=True)
-                        self.current_page = 0
-                        self.review_mode = True
-                        run_this_page = False
+                    run_this_page, run = self.process_keyboard_input(key_input, run)
+                    if not run_this_page:
                         break
             
             # Save status and annotations
