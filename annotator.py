@@ -50,6 +50,21 @@ class Annotator:
         return videos_list
 
     
+    def build_pagination(self, filter_label=False):
+        '''Take a list of videos in input and create a pagination array that
+        splits the videos into pages'''
+        # Filter the videos by labels if requested
+#        if filter_label:
+#            videos_list = [bf['video'] for bf in annotations] # TODO add filter for label
+
+        # Convert the list into a list of pages of grids
+        self.N_pages = int(np.ceil(len(self.dataset)/(self.Nx*self.Ny)))
+        self.pagination = [[] for _ in range(self.N_pages)]
+        for vid in range(len(self.dataset)):
+            p = int(np.floor(vid/(self.Nx*self.Ny)))
+            self.pagination[p].append(vid)
+
+    
     def list_to_pages(self, videos_list, annotations, filter_label=False):
         '''Split a list of videos into an array arranged by pages of mosaics'''
         # Filter the videos by labels if requested
