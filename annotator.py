@@ -332,8 +332,7 @@ class Annotator:
                     print('Error while loading the status file.')
             
             # Set the status
-            self.current_page = status_page
-            self.current_page = int(np.max((0, np.min((self.current_page, len(self.video_pages)-1)))))
+            self.current_page = int(np.max((0, np.min((status_page, len(self.N_pages)-1)))))
         else:
             # Start from page zero
             self.current_page = 0
@@ -359,11 +358,10 @@ class Annotator:
        # Load existing annotations
         existing_annotations = self.load_annotations() # TODO check this function
 
-        # Split the videos list into pages
+        # Initialise the dataset array and the pagination
         self.build_dataset(videos_list, existing_annotations)
         self.build_pagination()
-        self.video_pages = self.list_to_pages(videos_list, existing_annotations)
-        
+                
         # Load status
         self.review_mode = False  # In review mode, the status is not saved
         self.load_status()
