@@ -19,7 +19,8 @@ class Annotator:
 
     def __init__(self, labels, videos_folder, annotation_file='labels.json',
                  status_file='status.json', video_ext=['.mp4', '.avi'],
-                 N_show_approx=100, screen_ratio=16/9, image_resize=1):
+                 N_show_approx=100, screen_ratio=16/9, image_resize=1,
+                 loop_duration=None):
         
         self.labels = labels
         
@@ -31,6 +32,7 @@ class Annotator:
         self.N_show_approx = N_show_approx
         self.screen_ratio = screen_ratio
         self.image_resize = image_resize
+        self.loop_duration = loop_duration
 
         # Hard coded settings
         self.timebar_h = 20  # Pixels
@@ -431,8 +433,16 @@ class Annotator:
             print('No videos found at %s' % self.videos_folder)
             return -1
         
-        # Calculate the video frame sizes
+        # Calculate the video frame sizes and loop duration
         cap = cv2.VideoCapture(videos_list[0])
+        if self.loop_duration:
+            # Loop duration defined by the user
+            n_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+            delay = int(self.loop_duration*1000/n_frames)     
+        else:
+            # Automatic loop duration based on fps
+            delay = int(1000/cap.get(cv2.CAP_PROP_FPS))
+            
         _, sample_frame = cap.read()
         self.frame_dim = [int(bf*self.image_resize) for bf in sample_frame.shape]
         cap.release()
@@ -441,19 +451,15 @@ class Annotator:
         self.Ny = int(np.sqrt(self.N_show_approx/self.screen_ratio * self.frame_dim[1]/self.frame_dim[0]))
         self.Nx = int(np.sqrt(self.N_show_approx*self.screen_ratio * self.frame_dim[0]/self.frame_dim[1]))
  
-       # Load existing annotations
-        existing_annotations = self.load_annotations() # TODO check this function
-
-        # Initialise the dataset array and the pagination
+       # Load existing annotations and build pagination
+        existing_annotations = self.load_annotations()
         self.build_dataset(videos_list, existing_annotations)
         self.build_pagination()
                 
         # Load status
         self.review_mode = False  # In review mode, the status is not saved
         self.load_status()
- 
-        # Page direction (used for the cache)
-        self.page_direction = +1
+        self.page_direction = +1  # Used for the cache preload
 
         # Initialise the GUI
         cv2.namedWindow('MuViLab')
@@ -497,6 +503,7 @@ class Annotator:
             run_this_page = True
             while run_this_page:
                 for f in range(self.mosaic.shape[0]):
+                    tic = time.time()
                     img = np.copy(self.mosaic[f, ...])
                     # Draw annotation box and timebar
                     self.draw_anno_box(img)
@@ -505,7 +512,9 @@ class Annotator:
                     cv2.imshow('MuViLab', img)
                     
                     # Deal with the keyboard input
-                    key_input = cv2.waitKey(30)
+                    toc = int((time.time()-tic)*1000)
+                    wait = int(np.max((1, delay-toc)))
+                    key_input = cv2.waitKey(wait)
                     if key_input == -1:
                         continue
                     run_this_page, run = self.process_keyboard_input(key_input, run)
