@@ -16,6 +16,8 @@ Immagine you've got days or months of video recording from some source (e.g. vid
 
 With MuViLab, you can split your long video into short clips of 3-4 seconds, which are shown simultaneously in loop on screen. **With a single glance, you'll be able to identify your event in ~100 clips, speeding up your job by almost 100 times!**
 
+<link rel="img_src" href="doc/media/annotate.gif" />
+
 ![Click to annotate](doc/media/annotate.gif)
 
 After annotating your videos, you can use the *review function* to check and modify your labels:
