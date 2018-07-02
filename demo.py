@@ -5,8 +5,8 @@ from pytube import YouTube
 from annotator import Annotator
 # The example is a youtube video. The file is downloaded, split into several clips
 # and fed into the annotator.
-demo_folder = r'C:\Users\am14795\Local Documents\demo'
-clips_folder = r'C:\Users\am14795\Local Documents\demo\clips'
+demo_folder = r'./MuViLab_demo'
+clips_folder = r'./MuViLab_demo/clips'
 youtube_filename = 'youtube.mp4'
 clip_filename = 'clip_%04d.mp4'
 
