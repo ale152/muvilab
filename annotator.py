@@ -419,8 +419,7 @@ class Annotator:
                     # Load the status
                     status_time = data['time']
                     status_vid = data['first_video_id']
-                    print('Status file found at %s. Loading from video %d of %d' %
-                          (time.ctime(status_time), status_vid, len(self.dataset)))
+                    print('Status file found at %s' % time.ctime(status_time))
                 except json.JSONDecodeError:
                     status_vid = 0
                     print('Error while loading the status file.')
@@ -430,6 +429,10 @@ class Annotator:
                 if status_vid in self.pagination[p]:
                     self.current_page = p
                     break
+            else:
+                print(''''Status file belongs to a different session. Starting
+                      form page 0''')
+                self.current_page = 0
                 
             self.current_page = int(np.max((0, np.min((self.current_page, self.N_pages-1)))))
         else:
