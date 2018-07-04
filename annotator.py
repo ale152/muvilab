@@ -220,10 +220,10 @@ class Annotator:
         # Select the videos from the pagination
         videos_list = [self.dataset[vid]['video'] for vid in self.pagination[page]]
         init = True
+        i_scr, j_scr, k_time = 0, 0, 0
         # Loop over all the video files in the day folder
         for vi, video_file in enumerate(videos_list):
-            #print('\rLoading file %s' % video_file, end=' ')
-            
+           
             # Deal with long lists
             if vi == self.Nx*self.Ny:
                 print("The list of videos doesn't fit in the mosaic.")
@@ -236,21 +236,36 @@ class Annotator:
             while cap.isOpened():
                 _, frame = cap.read()
                 
-                if self.image_resize != 1:
+                # Resize the frame
+                if self.image_resize != 1 and frame is not None:
                     frame = cv2.resize(frame, (0, 0), fx=self.image_resize, fy=self.image_resize)
                 
-                # Initialise the video            
+                # Initialise the mosaic         
                 if init:
+                    if frame is None:
+                        raise Exception('The first video of the mosaic is invalid: %s.\n ' %
+                                        video_file + 'Impossible to initialise the mosaic.') 
                     fdim = frame.shape
                     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                     current_mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
-                    i_scr, j_scr, k_time = 0, 0, 0
                     init = False
                 
-                # Add video to the grid
-                current_mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
-                             j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
-                
+                # Check that the frame is valid
+                if frame is not None and frame.shape == fdim:
+                    # Add frame to the mosaic
+                    current_mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
+                                   j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
+                else:
+                    # Show an image with an error message
+                    print('Corrupted frame found at #%d of %s' % (k_time, video_file))
+                    broken_frame = np.zeros(fdim)
+                    pos = (10, fdim[0]//2)
+                    cv2.putText(broken_frame, 'No frame #%d' % k_time,
+                                pos, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 
+                                (255, 255, 255), thickness=1)
+                    current_mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
+                               j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = broken_frame
+
                 # When all the frames have been read
                 k_time += 1
                 if k_time == n_frames:
