@@ -30,10 +30,12 @@ Simply install the following required pagackes:
     
 and run the demo:
 
-    $ python demo.py
+    $ python examples/example_youtube_olympics.py
 
 ## Usage
-To start MuViLab, simply import the class Annotator in your script, set up the labels and run the main():
+To start MuViLab, simply import the class Annotator in your script and set up the labels.
+The method .video_to_clips() will allow you to convert a long video into several short clips.
+If you already have several clips to annotate, skip this step and simply run the main():
 
 ```python
 from annotator import Annotator
@@ -42,7 +44,7 @@ annotator = Annotator([
         {'name': 'text_of_label_2', 'color': (0, 0, 1)},
         {'name': 'text_of_label_3', 'color': (0, 1, 1)}],
         clips_folder, N_show_approx=100, annotation_file='my_labels.json')
-
+annotator.video_to_clips('long_video.mp4', './clips', clip_length=90, overlap=0, resize=0.5)
 annotator.main()
 ```
 
