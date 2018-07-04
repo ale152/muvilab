@@ -4,6 +4,8 @@
 *.dat
 *.xml
 
+*.mp4
+
 test*
 
 *.tmp
