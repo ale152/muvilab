@@ -65,7 +65,7 @@ class Annotator:
         while video_cap.isOpened():
             # Get the next video frame
             _, frame = video_cap.read()
-            
+
             # Resize the frame
             if resize != 1 and frame is not None:
                 frame = cv2.resize(frame, (0, 0), fx=resize, fy=resize)
@@ -104,7 +104,7 @@ class Annotator:
                 # Set the next frame according to the overlap
                 if overlap:
                     video_frame_counter -= frames_overlap
-                    video_cap.set(cv2.CAP_PROP_POS_FRAMES, frames_overlap)
+                    video_cap.set(cv2.CAP_PROP_POS_FRAMES, video_frame_counter+1)
             
             # Interrupt when the videos is fully processed
             if video_frame_counter < video_length - 1:
