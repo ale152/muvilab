@@ -55,6 +55,9 @@ class Annotator:
         # Generate clips path
         vid_name = os.path.splitext(os.path.basename(video_file))[0]
         clip_name = os.path.join(output_folder, '%s_clip_%%08d.mp4' % vid_name)
+        # Calculate the overlap in number of frames
+        assert 0 <= overlap < 1, 'The overlap must be in the range [0, 1['
+        frames_overlap = int(clip_length*overlap)
         # Open the source video and read the framerate
         video_cap = cv2.VideoCapture(video_file)
         fps = video_cap.get(cv2.CAP_PROP_FPS)
@@ -97,6 +100,10 @@ class Annotator:
                 clip_cap = cv2.VideoWriter(clip_name % clip_counter,
                                            fourcc, fps, 
                                            (frame_size[1], frame_size[0]))
+                # Set the next frame according to the overlap
+                if overlap:
+                    video_frame_counter -= frames_overlap
+                    video_cap.set(cv2.CAP_PROP_POS_FRAMES, frames_overlap)
             
             # Interrupt when the videos is fully processed
             if video_frame_counter < video_length-1:
