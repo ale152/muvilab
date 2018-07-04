@@ -45,6 +45,68 @@ class Annotator:
         # Debug
         self.debug_verbose = 0
 
+
+    def video_to_clips(self, video_file, output_folder, resize=1, overlap=0, clip_length=90):
+        '''Opens a long video file and saves it into several consecutive clips
+        of predefined length'''
+        # Initialise the counters
+        clip_counter = 0
+        video_frame_counter = 0
+        # Generate clips path
+        vid_name = os.path.splitext(os.path.basename(video_file))[0]
+        clip_name = os.path.join(output_folder, '%s_clip_%%08d.mp4' % vid_name)
+        # Open the source video and read the framerate
+        video_cap = cv2.VideoCapture(video_file)
+        fps = video_cap.get(cv2.CAP_PROP_FPS)
+        init = True
+        while video_cap.isOpened():
+            # Get the next video frame
+            _, frame = video_cap.read()
+            
+            # Resize the frame
+            if resize != 1 and frame is not None:
+                frame = cv2.resize(frame, (0, 0), fx=resize, fy=resize)
+                
+            if frame is None:
+                print('There was a problem processing frame %d' % video_frame_counter)
+            
+            # Initialise the video
+            if init:
+                frame_size = frame.shape
+                video_length = int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+                clip_frame_counter = 0
+                video_frame_counter = 0
+                init = False
+                clip_cap = cv2.VideoWriter(clip_name % clip_counter,
+                                           fourcc, fps, 
+                                           (frame_size[1], frame_size[0]))
+            
+            # Write the video frame into the clip
+            if clip_frame_counter < clip_length:
+                clip_cap.write(frame)
+                clip_frame_counter += 1
+            else:
+                # Save the complete clip
+                print('\rClip %d complete (%.1f%%)' % (clip_counter,
+                      video_frame_counter/video_length*100), end=' ')
+                clip_cap.release()
+                clip_frame_counter = 0
+                clip_counter += 1
+                # Initialise the next clip
+                clip_cap = cv2.VideoWriter(clip_name % clip_counter,
+                                           fourcc, fps, 
+                                           (frame_size[1], frame_size[0]))
+            
+            # Interrupt when the videos is fully processed
+            if video_frame_counter < video_length-1:
+                video_frame_counter += 1
+            else:
+                print('\rClip %d complete (100%%)' % clip_counter)
+                clip_cap.release()
+                video_cap.release()
+                break
+
     
     def find_videos(self):
         '''Loop over the video folder looking for video files'''
