@@ -8,8 +8,12 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
+version_info = (0, 1, 0)
+__version__ = '.'.join(str(c) for c in version_info)
+
 # BUG: The demo file creates an empty clip as last file
 # BUG: When quitting reviewing mode, the current_page is lost
+# TODO: Implement overlap
 # TODO: Add a function to jump to a specific page
 # TODO: Add a preprocessing function that splits long videos into clips (like the demo)
 # TODO: Add check video file is a video file
