@@ -4,7 +4,7 @@
 *.dat
 *.xml
 
-test*
+*.mp4
 
 *.tmp
 *.log

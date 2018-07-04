@@ -8,11 +8,11 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
-# BUG: The demo file creates an empty clip as last file
+version_info = (0, 1, 0)
+__version__ = '.'.join(str(c) for c in version_info)
+
 # BUG: When quitting reviewing mode, the current_page is lost
 # TODO: Add a function to jump to a specific page
-# TODO: Add a preprocessing function that splits long videos into clips (like the demo)
-# TODO: Add check video file is a video file
 
 class Annotator:
     '''Annotate multiple videos simultaneously by clicking on them.
@@ -40,6 +40,76 @@ class Annotator:
         self.rect_bord = 4  # Rectangle border
         # Debug
         self.debug_verbose = 0
+
+
+    def video_to_clips(self, video_file, output_folder, resize=1, overlap=0, clip_length=90):
+        '''Opens a long video file and saves it into several consecutive clips
+        of predefined length'''
+        # Initialise the counters
+        clip_counter = 0
+        video_frame_counter = 0
+        # Generate clips path
+        vid_name = os.path.splitext(os.path.basename(video_file))[0]
+        clip_name = os.path.join(output_folder, '%s_clip_%%08d.mp4' % vid_name)
+        # Calculate the overlap in number of frames
+        assert 0 <= overlap < 1, 'The overlap must be in the range [0, 1['
+        frames_overlap = int(clip_length*overlap)
+        # Open the source video and read the framerate
+        video_cap = cv2.VideoCapture(video_file)
+        fps = video_cap.get(cv2.CAP_PROP_FPS)
+        init = True
+        while video_cap.isOpened():
+            # Get the next video frame
+            _, frame = video_cap.read()
+
+            # Resize the frame
+            if resize != 1 and frame is not None:
+                frame = cv2.resize(frame, (0, 0), fx=resize, fy=resize)
+                
+            if frame is None:
+                print('There was a problem processing frame %d' % video_frame_counter)
+            
+            # Initialise the video
+            if init:
+                frame_size = frame.shape
+                video_length = int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+                clip_frame_counter = 0
+                video_frame_counter = 0
+                init = False
+                clip_cap = cv2.VideoWriter(clip_name % clip_counter,
+                                           fourcc, fps, 
+                                           (frame_size[1], frame_size[0]))
+
+            # Write the video frame into the clip
+            clip_cap.write(frame)
+            # Increase the index
+            if clip_frame_counter < clip_length - 1:
+                clip_frame_counter += 1
+            else:
+                # Save the complete clip
+                print('\rClip %d complete (%.1f%%)' % (clip_counter,
+                      video_frame_counter/video_length*100), end=' ')
+                clip_cap.release()
+                clip_frame_counter = 0
+                clip_counter += 1
+                # Initialise the next clip
+                clip_cap = cv2.VideoWriter(clip_name % clip_counter,
+                                           fourcc, fps, 
+                                           (frame_size[1], frame_size[0]))
+                # Set the next frame according to the overlap
+                if overlap:
+                    video_frame_counter -= frames_overlap
+                    video_cap.set(cv2.CAP_PROP_POS_FRAMES, video_frame_counter+1)
+            
+            # Interrupt when the videos is fully processed
+            if video_frame_counter < video_length - 1:
+                video_frame_counter += 1
+            else:
+                print('\rClip %d complete (100%%)' % clip_counter)
+                clip_cap.release()
+                video_cap.release()
+                break
 
     
     def find_videos(self):
@@ -146,10 +216,10 @@ class Annotator:
         # Select the videos from the pagination
         videos_list = [self.dataset[vid]['video'] for vid in self.pagination[page]]
         init = True
+        i_scr, j_scr, k_time = 0, 0, 0
         # Loop over all the video files in the day folder
         for vi, video_file in enumerate(videos_list):
-            #print('\rLoading file %s' % video_file, end=' ')
-            
+           
             # Deal with long lists
             if vi == self.Nx*self.Ny:
                 print("The list of videos doesn't fit in the mosaic.")
@@ -162,21 +232,36 @@ class Annotator:
             while cap.isOpened():
                 _, frame = cap.read()
                 
-                if self.image_resize != 1:
+                # Resize the frame
+                if self.image_resize != 1 and frame is not None:
                     frame = cv2.resize(frame, (0, 0), fx=self.image_resize, fy=self.image_resize)
                 
-                # Initialise the video            
+                # Initialise the mosaic         
                 if init:
+                    if frame is None:
+                        raise Exception('The first video of the mosaic is invalid: %s.\n ' %
+                                        video_file + 'Impossible to initialise the mosaic.') 
                     fdim = frame.shape
                     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                     current_mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
-                    i_scr, j_scr, k_time = 0, 0, 0
                     init = False
                 
-                # Add video to the grid
-                current_mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
-                             j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
-                
+                # Check that the frame is valid
+                if frame is not None and frame.shape == fdim:
+                    # Add frame to the mosaic
+                    current_mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
+                                   j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
+                else:
+                    # Show an image with an error message
+                    print('Corrupted frame found at #%d of %s' % (k_time, video_file))
+                    broken_frame = np.zeros(fdim)
+                    pos = (10, fdim[0]//2)
+                    cv2.putText(broken_frame, 'No frame #%d' % k_time,
+                                pos, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 
+                                (255, 255, 255), thickness=1)
+                    current_mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
+                               j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = broken_frame
+
                 # When all the frames have been read
                 k_time += 1
                 if k_time == n_frames:
@@ -345,8 +430,7 @@ class Annotator:
                     # Load the status
                     status_time = data['time']
                     status_vid = data['first_video_id']
-                    print('Status file found at %s. Loading from video %d of %d' %
-                          (time.ctime(status_time), status_vid, len(self.dataset)))
+                    print('Status file found at %s' % time.ctime(status_time))
                 except json.JSONDecodeError:
                     status_vid = 0
                     print('Error while loading the status file.')
@@ -356,6 +440,10 @@ class Annotator:
                 if status_vid in self.pagination[p]:
                     self.current_page = p
                     break
+            else:
+                print(''''Status file belongs to a different session. Starting
+                      form page 0''')
+                self.current_page = 0
                 
             self.current_page = int(np.max((0, np.min((self.current_page, self.N_pages-1)))))
         else:
