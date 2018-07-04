@@ -84,10 +84,11 @@ class Annotator:
                 clip_cap = cv2.VideoWriter(clip_name % clip_counter,
                                            fourcc, fps, 
                                            (frame_size[1], frame_size[0]))
-            
+
             # Write the video frame into the clip
-            if clip_frame_counter < clip_length:
-                clip_cap.write(frame)
+            clip_cap.write(frame)
+            # Increase the index
+            if clip_frame_counter < clip_length - 1:
                 clip_frame_counter += 1
             else:
                 # Save the complete clip
@@ -106,7 +107,7 @@ class Annotator:
                     video_cap.set(cv2.CAP_PROP_POS_FRAMES, frames_overlap)
             
             # Interrupt when the videos is fully processed
-            if video_frame_counter < video_length-1:
+            if video_frame_counter < video_length - 1:
                 video_frame_counter += 1
             else:
                 print('\rClip %d complete (100%%)' % clip_counter)
