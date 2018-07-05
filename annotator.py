@@ -8,7 +8,7 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
-version_info = (0, 1, 0)
+version_info = (0, 2, 0)
 __version__ = '.'.join(str(c) for c in version_info)
 
 # BUG: When quitting reviewing mode, the current_page is lost
@@ -655,5 +655,5 @@ if __name__ == '__main__':
     labels = [{'name': 'sit down', 'color': (0, 1, 0)},
               {'name': 'stand up', 'color': (0, 0, 1)},                 
               {'name': 'ambiguous', 'color': (0, 1, 1)}]
-    annotator = Annotator(labels, videos_folder)
+    annotator = Annotator(labels, videos_folder, annotation_file=r"G:\STS_sequences\labels.json")
     annotator.main()
