@@ -8,10 +8,9 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
-version_info = (0, 2, 0)
+version_info = (0, 2, 1)
 __version__ = '.'.join(str(c) for c in version_info)
 
-# BUG: When quitting reviewing mode, the current_page is lost
 # TODO: Add a function to jump to a specific page
 
 class Annotator:
@@ -512,8 +511,8 @@ class Annotator:
             # Check if review_mode is active
             if self.review_mode:
                 # Exit review mode
+                self.current_page = self.remember_page
                 self.build_pagination(filter_label=False)
-                self.current_page = 0
                 self.review_mode = False
                 self.delete_cache = True
                 run_this_page = False
@@ -521,6 +520,7 @@ class Annotator:
                 # Update the pagination using labelled videos only
                 self.build_pagination(filter_label=True)
                 print('Entering reviewing mode. Press "r" again to quit')
+                self.remember_page = self.current_page
                 self.current_page = 0
                 self.review_mode = True
                 self.delete_cache = True
