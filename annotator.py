@@ -8,7 +8,7 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
-version_info = (0, 2, 1)
+version_info = (0, 2, 2)
 __version__ = '.'.join(str(c) for c in version_info)
 
 # TODO: Add a function to jump to a specific page
