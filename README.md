@@ -54,7 +54,7 @@ annotator.main()
 ```
 
 ## Keyboard commands
-While running, the following keyboards commands will be accepted by the GUI:
+While running, the following keyboard commands will be accepted by the GUI:
 
 - **[1-9]**: Select a label to annotate videos
 - **Left Click**: Apply selected annotation
