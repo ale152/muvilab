@@ -314,7 +314,10 @@ class Annotator:
         # Convert i and j click into a single index
         vid_in_page = self.pagination[self.current_page]
         ind_click  = j_click*self.Ny + i_click
-        self.dataset[vid_in_page[ind_click]]['label'] = label_text
+        try:
+            self.dataset[vid_in_page[ind_click]]['label'] = label_text
+        except IndexError:
+            print('No video found in position (%d, %d)' % (i_click, j_click))
         
         # Update the rectangles
         self.update_rectangles()
