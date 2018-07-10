@@ -420,8 +420,13 @@ class Annotator:
         print('Labels available:')
         for li, label in enumerate(self.labels):
             print(' - %d: %s' % (li+1, label['name']))
+        print('-'*80)
+        print('Additional commands:')
+        print('B/N: back/next page')
+        print('G: go to page page')
+        print('R: enter/exit reviewing mode to check and modify the labels')
+        print('Q: quit')
         print('-'*80 + '\n')
-
 
     def load_status(self):
         '''Load the status from self.status_file and set self.current_page'''
