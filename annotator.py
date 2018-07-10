@@ -600,6 +600,9 @@ class Annotator:
         self.selected_label = 0
         cv2.namedWindow('MuViLab')
         cv2.setMouseCallback('MuViLab', self.click_callback)
+        # Show an empty image to open the window
+        cv2.imshow('MuViLab', np.zeros((10, 10)))
+        cv2.waitKey(10)
         
         # Define events and thread
         e_mosaic_ready = threading.Event()  # Tells the main when the mosaic is ready to be shown
@@ -645,6 +648,13 @@ class Annotator:
                     self.draw_anno_box(img)
                     img = self.add_timebar(img, f/self.mosaic.shape[0])
                     
+                    # Detect if window was closed
+                    if cv2.getWindowProperty('MuViLab', 0) < 0:
+                        run = None
+                        run_this_page = False
+                        break
+                    
+                    # Show the frame
                     cv2.imshow('MuViLab', img)
                     
                     # Deal with the keyboard input
