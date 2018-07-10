@@ -254,7 +254,6 @@ class Annotator:
                                    j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
                 else:
                     # Show an image with an error message
-                    print('Corrupted frame found at #%d of %s' % (k_time, video_file))
                     broken_frame = np.zeros(fdim)
                     pos = (10, fdim[0]//2)
                     cv2.putText(broken_frame, 'No frame #%d' % k_time,
