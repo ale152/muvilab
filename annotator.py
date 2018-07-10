@@ -689,9 +689,9 @@ class Annotator:
 
            
 if __name__ == '__main__':
-    videos_folder = r'G:\STS_sequences\Videos'
-    labels = [{'name': 'sit down', 'color': (0, 1, 0)},
-              {'name': 'stand up', 'color': (0, 0, 1)},                 
-              {'name': 'ambiguous', 'color': (0, 1, 1)}]
-    annotator = Annotator(labels, videos_folder, annotation_file=r"G:\STS_sequences\labels.json")
+    videos_folder = r'./Videos'
+    labels = [{'name': 'walk', 'color': (0, 1, 0)},
+              {'name': 'run', 'color': (0, 0, 1)},                 
+              {'name': 'jump', 'color': (0, 1, 1)}]
+    annotator = Annotator(labels, videos_folder, annotation_file=r'./labels.json')
     annotator.main()
