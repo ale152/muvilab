@@ -13,6 +13,8 @@ import cv2
 version_info = (0, 2, 2)
 __version__ = '.'.join(str(c) for c in version_info)
 
+# TODO: Change the behaviour when labels are different from those in the file loaded
+
 class Annotator:
     '''Annotate multiple videos simultaneously by clicking on them.
     See demo.py for a working example.'''
