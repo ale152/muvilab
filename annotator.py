@@ -4,6 +4,8 @@ import os
 import json
 import time
 import threading
+import tkinter as tk
+from tkinter import simpledialog
 from shutil import copyfile
 import numpy as np
 import cv2
@@ -496,6 +498,24 @@ class Annotator:
                 self.current_page -= 1
                 self.page_direction = -1
                 run_this_page = False
+                
+        # Go to page
+        if chr(key_input) in {'g', 'G'}:
+            # Show the dialog
+            root = tk.Tk()
+            root.withdraw()
+            answer = simpledialog.askstring('Go to page', 'Insert page number (out of %d)' % self.N_pages)
+            try:
+                answer = int(answer)
+                if answer < 1:
+                    answer = 1
+                if answer > self.N_pages:
+                    answer = self.N_pages
+                self.current_page = answer-1
+                self.delete_cache = True
+                run_this_page = False
+            except ValueError:
+                print('Page must be a number')
                 
         # Select label
         if chr(key_input) in {chr(d) for d in range(ord('0'),ord('9')+1)}:
