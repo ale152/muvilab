@@ -434,6 +434,7 @@ class Annotator:
         print('Q: quit')
         print('-'*80 + '\n')
 
+
     def load_status(self):
         '''Load the status from self.status_file and set self.current_page'''
         if os.path.isfile(self.status_file):
