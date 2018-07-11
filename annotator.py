@@ -21,8 +21,8 @@ class Annotator:
 
     def __init__(self, labels, videos_folder, annotation_file='labels.json',
                  status_file='status.json', video_ext=['.mp4', '.avi'],
-                 N_show_approx=100, screen_ratio=16/9, image_resize=1,
-                 loop_duration=None):
+                 sort_files_list=True, N_show_approx=100, screen_ratio=16/9, 
+                 image_resize=1, loop_duration=None):
         
         self.labels = labels
         
@@ -31,6 +31,7 @@ class Annotator:
         self.annotation_file = annotation_file
         self.status_file = status_file
         self.video_ext = video_ext
+        self.sort_files_list = sort_files_list
         self.N_show_approx = N_show_approx
         self.screen_ratio = screen_ratio
         self.image_resize = image_resize
