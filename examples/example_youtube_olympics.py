@@ -33,7 +33,8 @@ annotator = Annotator([
         {'name': 'result_table', 'color': (0, 1, 0)},
         {'name': 'olympics_logo', 'color': (0, 0, 1)},
         {'name': 'stretching', 'color': (0, 1, 1)}],
-        clips_folder, N_show_approx=100, annotation_file='demo_labels.json')
+        clips_folder, sort_files_list=True, N_show_approx=100, screen_ratio=16/9, 
+        image_resize=1, loop_duration=None, annotation_file='demo_labels.json')
 
 # Split the video into clips
 print('Generating clips from the video...')
