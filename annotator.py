@@ -429,7 +429,7 @@ class Annotator:
         print('-'*80)
         print('Additional commands:')
         print('B/N: back/next page')
-        print('G: go to page page')
+        print('G: go to specific page')
         print('R: enter/exit reviewing mode to check and modify the labels')
         print('Q: quit')
         print('-'*80 + '\n')
