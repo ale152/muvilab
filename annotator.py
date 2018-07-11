@@ -10,7 +10,7 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
-version_info = (0, 2, 5)
+version_info = (0, 2, 6)
 __version__ = '.'.join(str(c) for c in version_info)
 
 # TODO: Change the behaviour when labels are different from those in the file loaded
@@ -21,8 +21,8 @@ class Annotator:
 
     def __init__(self, labels, videos_folder, annotation_file='labels.json',
                  status_file='status.json', video_ext=['.mp4', '.avi'],
-                 N_show_approx=100, screen_ratio=16/9, image_resize=1,
-                 loop_duration=None):
+                 sort_files_list=True, N_show_approx=100, screen_ratio=16/9, 
+                 image_resize=1, loop_duration=None):
         
         self.labels = labels
         
@@ -31,6 +31,7 @@ class Annotator:
         self.annotation_file = annotation_file
         self.status_file = status_file
         self.video_ext = video_ext
+        self.sort_files_list = sort_files_list
         self.N_show_approx = N_show_approx
         self.screen_ratio = screen_ratio
         self.image_resize = image_resize
@@ -117,6 +118,10 @@ class Annotator:
         '''Loop over the video folder looking for video files'''
         videos_list = []
         for folder, _, files in os.walk(self.videos_folder):
+            # Sort the files in each folder
+            if self.sort_files_list:
+                files = sorted(files)
+            # Loop over the files
             for file in files:
                 fullfile_path = os.path.join(folder, file)
                 if os.path.splitext(fullfile_path)[1] in self.video_ext:
@@ -424,10 +429,11 @@ class Annotator:
         print('-'*80)
         print('Additional commands:')
         print('B/N: back/next page')
-        print('G: go to page page')
+        print('G: go to specific page')
         print('R: enter/exit reviewing mode to check and modify the labels')
         print('Q: quit')
         print('-'*80 + '\n')
+
 
     def load_status(self):
         '''Load the status from self.status_file and set self.current_page'''
@@ -521,7 +527,7 @@ class Annotator:
                 self.current_page = answer-1
                 self.delete_cache = True
                 run_this_page = False
-            except ValueError:
+            except (ValueError, TypeError):
                 print('Page must be a number')
                 
         # Select label
