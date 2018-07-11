@@ -53,6 +53,10 @@ annotator.video_to_clips('long_video.mp4', clips_folder, clip_length=90, overlap
 annotator.main()
 ```
 
+## Clips order
+The video clips are shown in a vertical order from the top left to the bottom right corner:
+![Video clips order](doc/media/order.gif)
+
 ## Keyboard commands
 While running, the following keyboard commands will be accepted by the GUI:
 
