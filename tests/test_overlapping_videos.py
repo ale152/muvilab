@@ -16,7 +16,8 @@ cap = cv2.VideoWriter(filename, fourcc, 10, video_size)
 
 for i in range(1100):
     img = np.zeros((video_size[1], video_size[0], 3)).astype('uint8')
-    cv2.putText(img, str(i), (10, video_size[1]//2), cv2.FONT_HERSHEY_SIMPLEX, 1.7, (255,255,255), thickness=2)
+    cv2.putText(img, 'Frame %d' % i, (10, video_size[1]//2), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), thickness=2)
+    cv2.rectangle(img, (0, 0), (158, 118), (255, 255, 255), 2)
     cap.write(img)
     
 cap.release()

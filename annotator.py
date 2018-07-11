@@ -4,14 +4,16 @@ import os
 import json
 import time
 import threading
+import tkinter as tk
+from tkinter import simpledialog
 from shutil import copyfile
 import numpy as np
 import cv2
 
-version_info = (0, 2, 2)
+version_info = (0, 2, 5)
 __version__ = '.'.join(str(c) for c in version_info)
 
-# TODO: Add a function to jump to a specific page
+# TODO: Change the behaviour when labels are different from those in the file loaded
 
 class Annotator:
     '''Annotate multiple videos simultaneously by clicking on them.
@@ -252,7 +254,6 @@ class Annotator:
                                    j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
                 else:
                     # Show an image with an error message
-                    print('Corrupted frame found at #%d of %s' % (k_time, video_file))
                     broken_frame = np.zeros(fdim)
                     pos = (10, fdim[0]//2)
                     cv2.putText(broken_frame, 'No frame #%d' % k_time,
@@ -312,7 +313,10 @@ class Annotator:
         # Convert i and j click into a single index
         vid_in_page = self.pagination[self.current_page]
         ind_click  = j_click*self.Ny + i_click
-        self.dataset[vid_in_page[ind_click]]['label'] = label_text
+        try:
+            self.dataset[vid_in_page[ind_click]]['label'] = label_text
+        except IndexError:
+            print('No video found in position (%d, %d)' % (i_click, j_click))
         
         # Update the rectangles
         self.update_rectangles()
@@ -417,8 +421,13 @@ class Annotator:
         print('Labels available:')
         for li, label in enumerate(self.labels):
             print(' - %d: %s' % (li+1, label['name']))
+        print('-'*80)
+        print('Additional commands:')
+        print('B/N: back/next page')
+        print('G: go to page page')
+        print('R: enter/exit reviewing mode to check and modify the labels')
+        print('Q: quit')
         print('-'*80 + '\n')
-
 
     def load_status(self):
         '''Load the status from self.status_file and set self.current_page'''
@@ -497,6 +506,24 @@ class Annotator:
                 self.page_direction = -1
                 run_this_page = False
                 
+        # Go to page
+        if chr(key_input) in {'g', 'G'}:
+            # Show the dialog
+            root = tk.Tk()
+            root.withdraw()
+            answer = simpledialog.askstring('Go to page', 'Insert page number (out of %d)' % self.N_pages)
+            try:
+                answer = int(answer)
+                if answer < 1:
+                    answer = 1
+                if answer > self.N_pages:
+                    answer = self.N_pages
+                self.current_page = answer-1
+                self.delete_cache = True
+                run_this_page = False
+            except ValueError:
+                print('Page must be a number')
+                
         # Select label
         if chr(key_input) in {chr(d) for d in range(ord('0'),ord('9')+1)}:
 
@@ -574,6 +601,9 @@ class Annotator:
         self.selected_label = 0
         cv2.namedWindow('MuViLab')
         cv2.setMouseCallback('MuViLab', self.click_callback)
+        # Show an empty image to open the window
+        cv2.imshow('MuViLab', np.zeros((10, 10)))
+        cv2.waitKey(10)
         
         # Define events and thread
         e_mosaic_ready = threading.Event()  # Tells the main when the mosaic is ready to be shown
@@ -619,6 +649,13 @@ class Annotator:
                     self.draw_anno_box(img)
                     img = self.add_timebar(img, f/self.mosaic.shape[0])
                     
+                    # Detect if window was closed
+                    if cv2.getWindowProperty('MuViLab', 0) < 0:
+                        run = None
+                        run_this_page = False
+                        break
+                    
+                    # Show the frame
                     cv2.imshow('MuViLab', img)
                     
                     # Deal with the keyboard input
@@ -651,9 +688,9 @@ class Annotator:
 
            
 if __name__ == '__main__':
-    videos_folder = r'G:\STS_sequences\Videos'
-    labels = [{'name': 'sit down', 'color': (0, 1, 0)},
-              {'name': 'stand up', 'color': (0, 0, 1)},                 
-              {'name': 'ambiguous', 'color': (0, 1, 1)}]
-    annotator = Annotator(labels, videos_folder, annotation_file=r"G:\STS_sequences\labels.json")
+    videos_folder = r'./Videos'
+    labels = [{'name': 'walk', 'color': (0, 1, 0)},
+              {'name': 'run', 'color': (0, 0, 1)},                 
+              {'name': 'jump', 'color': (0, 1, 1)}]
+    annotator = Annotator(labels, videos_folder, annotation_file=r'./labels.json')
     annotator.main()

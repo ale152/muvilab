@@ -16,7 +16,7 @@ youtube_filename = 'youtube.mp4'
 
 # Create the folders
 if not os.path.exists(demo_folder):
-        os.mkdir(demo_folder)
+    os.mkdir(demo_folder)
 if not os.path.exists(clips_folder):
     os.mkdir(clips_folder)
     
