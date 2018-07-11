@@ -65,6 +65,7 @@ While running, the following keyboard commands will be accepted by the GUI:
 - **Right Click**: Remove annotation
 - **N**: Go to the **n**ext page
 - **B**: Go **b**ack to the previous page
+- **G**: **G**o to a specific page
 - **R**: Enter/exit **r**eviewing mode
 - **Q**: **Q**uit the program
 
