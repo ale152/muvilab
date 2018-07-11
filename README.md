@@ -80,6 +80,7 @@ Additional parameters can be set when initialising `Annotator`:
 - **annotation\_file**: A string containing the name of the file where the annotations will be saved. Default value: `'labels.json'`
 - **status\_file**: A string containing the name of the file where the status of each session is saved (i.e. last video annotated). Default value `'status.json'`
 - **video\_ext**: List of strings containing the file extension of the video clips to load in the annotator. Default value: `['.mp4', '.avi']`
+- **sort\_files\_list**: A boolean variable. If `True`, the video files in each folder will be sorted alphabetically, otherwise they will be shown according to the default order of the file system. Default value: `True`.
 - **N\_show\_approx**: Integer number of clips to show simultaneously on screen. This number is approximate because MuViLab will try to fill completely the grid of videos according to the screen ratio selected. Example: if `N_show_approx=8` and the window is square, a total 9 clips will be shown instead. Default value: `100`
 - **screen\_ratio**: Floating number describing the ratio (W/H) of the GUI window. MuViLab will try to fill a window of this ratio using a number of clips as close as possible to `N_show_approx`. Default value: `16/9`
 - **image\_resize**: A floating number between `]0, inf[` to resize the video clips when showing them on screen. The size of the clips will scaled by this factor. Example: `resize=0.5` will _reduce_ the size by 50%, `resize=1.5` will _increase_ the size by 50%. Default value: `1`
