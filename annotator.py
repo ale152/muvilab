@@ -526,7 +526,7 @@ class Annotator:
                 self.current_page = answer-1
                 self.delete_cache = True
                 run_this_page = False
-            except ValueError:
+            except (ValueError, TypeError):
                 print('Page must be a number')
                 
         # Select label
