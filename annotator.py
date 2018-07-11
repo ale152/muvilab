@@ -118,6 +118,10 @@ class Annotator:
         '''Loop over the video folder looking for video files'''
         videos_list = []
         for folder, _, files in os.walk(self.videos_folder):
+            # Sort the files in each folder
+            if self.sort_files_list:
+                files = sorted(files)
+            # Loop over the files
             for file in files:
                 fullfile_path = os.path.join(folder, file)
                 if os.path.splitext(fullfile_path)[1] in self.video_ext:
