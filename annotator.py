@@ -10,7 +10,7 @@ from shutil import copyfile
 import numpy as np
 import cv2
 
-version_info = (0, 2, 2)
+version_info = (0, 2, 5)
 __version__ = '.'.join(str(c) for c in version_info)
 
 # TODO: Change the behaviour when labels are different from those in the file loaded
