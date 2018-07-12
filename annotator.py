@@ -381,7 +381,7 @@ class Annotator:
         img = np.concatenate((bar, img), axis=0)
         return img
 
-    def add_statusbar(self, img):
+    def add_statusbar(self, img, frame):
         '''Add a status bar which displays the selected label, current page, and current frame'''
         img = np.concatenate((img, np.zeros((self.timebar_h, img.shape[1], 3))), axis=0)
         # text parameters
@@ -395,6 +395,18 @@ class Annotator:
         cv2.putText(img, label_text, (0, height + (label_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
         (name_offset, _) = cv2.getTextSize(label['name'], cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
         cv2.putText(img, label['name'], (label_offset[0], height + (name_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, label['color'])
+
+        # draw the current page
+        page_text = 'Page: %i/%i' % (self.current_page + 1, self.N_pages)
+        (page_offset, _) = cv2.getTextSize(page_text, cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
+        page_x = int((self.mosaic.shape[2] / 2) - (page_offset[0] / 2))
+        cv2.putText(img, page_text, (page_x, height + (page_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
+
+        # draw current frame
+        time_text = 'Frame: %i/%i' % (frame + 1, self.mosaic.shape[0])
+        (time_offset, _) = cv2.getTextSize(time_text, cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
+        frame_x = self.mosaic.shape[2] - time_offset[0]
+        cv2.putText(img, time_text, (frame_x, height + (time_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
         return img
 
     def load_annotations(self):
@@ -669,7 +681,7 @@ class Annotator:
                     # Draw annotation box, timebar, and statusbar
                     self.draw_anno_box(img)
                     img = self.add_timebar(img, f/self.mosaic.shape[0])
-                    img = self.add_statusbar(img)
+                    img = self.add_statusbar(img, f)
 
                     # Detect if window was closed
                     if cv2.getWindowProperty('MuViLab', 0) < 0:
