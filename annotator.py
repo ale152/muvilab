@@ -386,14 +386,16 @@ class Annotator:
         img = np.concatenate((img, np.zeros((self.timebar_h, img.shape[1], 3))), axis=0)
         # text parameters
         font_size = 0.4
-        height = self.mosaic.shape[1] + int(1.6 * self.timebar_h)
+        height = self.mosaic.shape[1] + int(1.5 * self.timebar_h)
         label = self.labels[self.selected_label]
 
         # draw 'Selected label: <label>' at the bottom left
         label_text = 'Selected label: '
         (label_offset, _) = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
-        cv2.putText(img, label_text, (0, height), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
-        cv2.putText(img, label['name'], (label_offset[0], height), cv2.FONT_HERSHEY_SIMPLEX, font_size, label['color'])
+        cv2.putText(img, label_text, (0, height + (label_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
+        (name_offset, _) = cv2.getTextSize(label['name'], cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
+        cv2.putText(img, label['name'], (label_offset[0], height + (name_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, label['color'])
+        return img
 
     def load_annotations(self):
         '''Load annotations from self.annotation_file'''
@@ -664,7 +666,7 @@ class Annotator:
                 for f in range(self.mosaic.shape[0]):
                     tic = time.time()
                     img = np.copy(self.mosaic[f, ...])
-                    # Draw annotation box and timebar
+                    # Draw annotation box, timebar, and statusbar
                     self.draw_anno_box(img)
                     img = self.add_timebar(img, f/self.mosaic.shape[0])
                     img = self.add_statusbar(img)
