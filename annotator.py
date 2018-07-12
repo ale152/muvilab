@@ -378,9 +378,22 @@ class Annotator:
         bar[:, 0:idt, 0] = color[0]
         bar[:, 0:idt, 1] = color[1]
         bar[:, 0:idt, 2] = color[2]
-        img = np.concatenate((bar, img, bar), axis=0)
+        img = np.concatenate((bar, img), axis=0)
         return img
 
+    def add_statusbar(self, img):
+        '''Add a status bar which displays the selected label, current page, and current frame'''
+        img = np.concatenate((img, np.zeros((self.timebar_h, img.shape[1], 3))), axis=0)
+        # text parameters
+        font_size = 0.4
+        height = self.mosaic.shape[1] + int(1.6 * self.timebar_h)
+        label = self.labels[self.selected_label]
+
+        # draw 'Selected label: <label>' at the bottom left
+        label_text = 'Selected label: '
+        (label_offset, _) = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
+        cv2.putText(img, label_text, (0, height), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
+        cv2.putText(img, label['name'], (label_offset[0], height), cv2.FONT_HERSHEY_SIMPLEX, font_size, label['color'])
 
     def load_annotations(self):
         '''Load annotations from self.annotation_file'''
@@ -654,7 +667,8 @@ class Annotator:
                     # Draw annotation box and timebar
                     self.draw_anno_box(img)
                     img = self.add_timebar(img, f/self.mosaic.shape[0])
-                    
+                    img = self.add_statusbar(img)
+
                     # Detect if window was closed
                     if cv2.getWindowProperty('MuViLab', 0) < 0:
                         run = None
