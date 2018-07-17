@@ -96,9 +96,10 @@ class Annotator:
                 clip_frame_counter = 0
                 clip_counter += 1
                 # Initialise the next clip
-                clip_cap = cv2.VideoWriter(clip_name % clip_counter,
-                                           fourcc, fps, 
-                                           (frame_size[1], frame_size[0]))
+                if video_frame_counter < video_length - 1:
+                    clip_cap = cv2.VideoWriter(clip_name % clip_counter,
+                                               fourcc, fps, 
+                                               (frame_size[1], frame_size[0]))
                 # Set the next frame according to the overlap
                 if overlap:
                     video_frame_counter -= frames_overlap
