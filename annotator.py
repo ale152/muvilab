@@ -456,10 +456,14 @@ class Annotator:
             
             # Check if the label is part of the valid set
             if anno['label'] and anno['label'] not in valid_labels:
-                print(('Found label "%s" in %s, not compatible with %s. ' +
-                      'All the labels will be discarded') %
-                      (anno['label'], self.annotation_file, valid_labels))
-                return []
+                msg = 'The label "%s" was found in %s.\n' \
+                  'This label is not compatible with the labels ' \
+                  'specified when initialising MuViLab:\n %s\n ' \
+                  'Please check the labels used to initialise the ' \
+                  'Annotator class' % (anno['label'], self.annotation_file, 
+                                         valid_labels)
+                raise Exception(msg)
+
             
         return annotations
 
