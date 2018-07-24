@@ -136,6 +136,8 @@ class Annotator:
         respective annotations'''
         N_videos = len(videos_list)
         self.dataset = [{'video': '', 'label': ''} for _ in range(N_videos)]
+        # Check which annotations have been skipped from the file
+        skipped = [True for _ in range(len(annotations))]
         print('Generating dataset array...')
         for vid in range(N_videos):
             # Add the video to the dataset
@@ -145,6 +147,20 @@ class Annotator:
             anno = [bf for bf in annotations if bf['video'] == real_path]
             if anno:
                 self.dataset[vid]['label'] = anno[0]['label']
+                skipped[annotations.index(anno[0])] = False
+                    
+        if any(skipped):
+            print('\n/!\\/!\\/!\\ Warning /!\\/!\\/!\\\n'
+                  '%d of the %d labels found were not loaded because no '
+                  'matching file was found in the video folder.\n'
+                  'Sample path from video folder:\n %s\n'
+                  'Sample path from label file:\n %s\n'
+                  '/!\\/!\\/!\\ Warning /!\\/!\\/!\\\n' % (np.sum(skipped),
+                                                       len(annotations),
+                                                       videos_list[0],
+                                                       annotations[0]['video']))
+        else:
+            print('Annotations successfully loaded')
 
 
     def build_pagination(self, filter_label=False):
