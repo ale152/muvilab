@@ -398,6 +398,7 @@ class Annotator:
         img = np.concatenate((bar, img), axis=0)
         return img
 
+
     def add_statusbar(self, img, frame):
         '''Add a status bar which displays the selected label, current page, and current frame'''
         img = np.concatenate((img, np.zeros((self.timebar_h, img.shape[1], 3))), axis=0)
@@ -425,6 +426,7 @@ class Annotator:
         frame_x = self.mosaic.shape[2] - time_offset[0]
         cv2.putText(img, time_text, (frame_x, height + (time_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
         return img
+
 
     def load_annotations(self):
         '''Load annotations from self.annotation_file'''
@@ -636,7 +638,7 @@ class Annotator:
         self.Ny = int(np.sqrt(self.N_show_approx/self.screen_ratio * self.frame_dim[1]/self.frame_dim[0]))
         self.Nx = int(np.sqrt(self.N_show_approx*self.screen_ratio * self.frame_dim[0]/self.frame_dim[1]))
  
-       # Load existing annotations and build pagination
+        # Load existing annotations and build pagination
         existing_annotations = self.load_annotations()
         self.build_dataset(videos_list, existing_annotations)
         self.build_pagination()
