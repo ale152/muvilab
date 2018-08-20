@@ -5,15 +5,14 @@ import json
 import time
 import threading
 import tkinter as tk
+from tkinter import ttk
 from tkinter import simpledialog
 from shutil import copyfile
 import numpy as np
 import cv2
 
-version_info = (0, 2, 6)
+version_info = (0, 2, 8)
 __version__ = '.'.join(str(c) for c in version_info)
-
-# TODO: Change the behaviour when labels are different from those in the file loaded
 
 class Annotator:
     '''Annotate multiple videos simultaneously by clicking on them.
@@ -163,7 +162,7 @@ class Annotator:
             print('Annotations successfully loaded')
 
 
-    def build_pagination(self, filter_label=False):
+    def build_pagination(self, filter_label=False, filter=None):
         '''Take a list of videos in input and create a pagination array that
         splits the videos into pages'''
         # Filter the videos by labels if requested
@@ -178,7 +177,8 @@ class Annotator:
                     p += 1
                     
                 # Check if the video is labelled
-                if self.dataset[vid]['label']:
+                if (filter and self.dataset[vid]['label'] == filter) or \
+                        (filter is None and self.dataset[vid]['label']):
                     self.pagination[p].append(vid)
                 
             self.N_pages = p+1
@@ -600,8 +600,29 @@ class Annotator:
                 self.delete_cache = True
                 run_this_page = False
             else:
+                # Ask the user which label to review
+                root = tk.Tk()
+                description_text = ttk.Label(root, text='Filter label: ')
+                # Create a dropdown list
+                show_all_text = 'Show all'
+                combo_elem = tk.StringVar()
+                combobox = ttk.Combobox(root, textvariable=combo_elem, state='readonly')
+                combobox['values'] = tuple([show_all_text] + [bf['name'] for bf in self.labels])
+                combobox.current(0)
+                # Create the OK button
+                ok_button = tk.Button(root, text='ok', command=root.destroy)
+                # Show the GUI
+                description_text.grid(row=0, column=0)
+                combobox.grid(row=0, column=1)
+                ok_button.grid(row=0, column=2)
+                root.mainloop()
+                # Get the answer
+                filter = combo_elem.get()
+                if filter == show_all_text:
+                    filter = None
+
                 # Update the pagination using labelled videos only
-                self.build_pagination(filter_label=True)
+                self.build_pagination(filter_label=True, filter=filter)
                 print('Entering reviewing mode. Press "r" again to quit')
                 self.remember_page = self.current_page
                 self.current_page = 0
