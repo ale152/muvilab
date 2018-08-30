@@ -623,12 +623,18 @@ class Annotator:
 
                 # Update the pagination using labelled videos only
                 self.build_pagination(filter_label=True, filter=filter)
-                print('Entering reviewing mode. Press "r" again to quit')
-                self.remember_page = self.current_page
-                self.current_page = 0
-                self.review_mode = True
-                self.delete_cache = True
-                run_this_page = False
+                # Check that there are labels
+                if self.pagination[0]:
+                    print('Entering reviewing mode. Press "r" again to quit')
+                    self.remember_page = self.current_page
+                    self.current_page = 0
+                    self.review_mode = True
+                    self.delete_cache = True
+                    run_this_page = False
+                else:
+                    print('No videos found with label %s. Please annotate some videos before reviewing the labels' %
+                          filter)
+                    self.build_pagination(filter_label=False)
 
         # Quit
         if chr(key_input) in {'q', 'Q'}:
