@@ -310,11 +310,11 @@ class Annotator:
         # Set the label
         if event == cv2.EVENT_LBUTTONDOWN:
             label = self.labels[self.selected_label]
-            self.set_label(label['name'], label['color'], x_click, y_click)
+            self.set_label(label['name'], x_click, y_click)
 
         # Detect right click to remove label
         if event == cv2.EVENT_RBUTTONDOWN:
-            self.remove_label(x_click, y_click)
+            self.set_label('', x_click, y_click)
 
 
     def click_to_ij(self, x_click, y_click):
@@ -327,7 +327,7 @@ class Annotator:
         return i_click, j_click
 
 
-    def set_label(self, label_text, label_color, x_click, y_click):
+    def set_label(self, label_text, x_click, y_click):
         '''Set a specific label based on the user click input'''
         # Find the indices of the clicked sequence
         i_click, j_click = self.click_to_ij(x_click, y_click)
@@ -339,20 +339,6 @@ class Annotator:
             self.dataset[vid_in_page[ind_click]]['label'] = label_text
         except IndexError:
             print('No video found in position (%d, %d)' % (i_click, j_click))
-        
-        # Update the rectangles
-        self.update_rectangles()
-
-
-    def remove_label(self, x_click, y_click):
-        '''Remove label from the annotations'''
-        # Find the indices of the clicked sequence
-        i_click, j_click = self.click_to_ij(x_click, y_click)
-        
-        # Convert i and j click into a single index
-        vid_in_page = self.pagination[self.current_page]
-        ind_click  = j_click*self.Ny + i_click
-        self.dataset[vid_in_page[ind_click]]['label'] = ''
         
         # Update the rectangles
         self.update_rectangles()
