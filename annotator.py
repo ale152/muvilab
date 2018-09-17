@@ -619,6 +619,12 @@ class Annotator:
                           filter)
                     self.build_pagination(filter_label=False)
 
+        # Extract video
+        if chr(key_input) in {'e', 'E'}:
+            from skvideo.io import vwrite
+            file_name = input('Insert file name: ')
+            vwrite(file_name + '.mp4', self.mosaic*255)
+
         # Quit
         if chr(key_input) in {'q', 'Q'}:
             run = None
