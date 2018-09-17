@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import simpledialog
 from shutil import copyfile
+from matplotlib import pyplot as plt
 import numpy as np
 import cv2
 
@@ -427,7 +428,16 @@ class Annotator:
             except json.JSONDecodeError:
                 print('Unable to load annotations from %s' % self.annotation_file)
                 return []
-            
+
+        # Check if labels were provided when running the script
+        if not self.labels:
+            extracted = list(sorted(set([bf['label'] for bf in annotations])))
+            self.labels = []
+            for i, lab in enumerate(extracted):
+                col = plt.cm.jet(i/len(extracted))[0:3]
+                self.labels.append({'name':lab, 'color':col})
+            print('Labels were not provided. The following labels were automatically extracted from %s' % self.annotation_file)
+
         # Check for absolute/relative paths of annotated videos and
         # make sure that labels are valid
         valid_labels = {bf['name'] for bf in self.labels}
