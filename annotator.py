@@ -4,9 +4,6 @@ import os
 import json
 import time
 import threading
-import tkinter as tk
-from tkinter import ttk
-from tkinter import simpledialog
 from shutil import copyfile
 from matplotlib import pyplot as plt
 import numpy as np
@@ -561,9 +558,8 @@ class Annotator:
         # Go to page
         if chr(key_input) in {'g', 'G'}:
             # Show the dialog
-            root = tk.Tk()
-            root.withdraw()
-            answer = simpledialog.askstring('Go to page', 'Insert page number (out of %d)' % self.N_pages)
+            print('Go to page')
+            answer = input('Insert page number (out of %d)' % self.N_pages)
             try:
                 answer = int(answer)
                 if answer < 1:
@@ -597,25 +593,16 @@ class Annotator:
                 run_this_page = False
             else:
                 # Ask the user which label to review
-                root = tk.Tk()
-                description_text = ttk.Label(root, text='Filter label: ')
-                # Create a dropdown list
-                show_all_text = 'Show all'
-                combo_elem = tk.StringVar()
-                combobox = ttk.Combobox(root, textvariable=combo_elem, state='readonly')
-                combobox['values'] = tuple([show_all_text] + [bf['name'] for bf in self.labels])
-                combobox.current(0)
-                # Create the OK button
-                ok_button = tk.Button(root, text='ok', command=root.destroy)
-                # Show the GUI
-                description_text.grid(row=0, column=0)
-                combobox.grid(row=0, column=1)
-                ok_button.grid(row=0, column=2)
-                root.mainloop()
-                # Get the answer
-                filter = combo_elem.get()
-                if filter == show_all_text:
+                print('Which label do you want to filter?\n Labels available:')
+                print('[0] Filter all labels')
+                for i, lab in enumerate(self.labels):
+                    print('[%d] %s' % (i+1, lab['name']))
+                filter_i = int(input('Insert label number:'))
+
+                if filter_i == 0:
                     filter = None
+                else:
+                    filter = self.labels[filter_i-1]['name']
 
                 # Update the pagination using labelled videos only
                 self.build_pagination(filter_label=True, filter=filter)
