@@ -619,6 +619,16 @@ class Annotator:
                           filter)
                     self.build_pagination(filter_label=False)
 
+        # Speed up the loop
+        if chr(key_input) in {'+'}:
+            self.delay /= 1.5
+            print('Delay decreased to %g' % self.delay)
+
+        # Speed up the loop
+        if chr(key_input) in {'-'}:
+            self.delay *= 1.5
+            print('Delay increased to %g' % self.delay)
+
         # Extract video
         if chr(key_input) in {'e', 'E'}:
             from skvideo.io import vwrite
@@ -645,10 +655,10 @@ class Annotator:
         if self.loop_duration:
             # Loop duration defined by the user
             n_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-            delay = int(self.loop_duration*1000/n_frames)     
+            self.delay = int(self.loop_duration*1000/n_frames)
         else:
             # Automatic loop duration based on fps
-            delay = int(1000/cap.get(cv2.CAP_PROP_FPS))
+            self.delay = int(1000/cap.get(cv2.CAP_PROP_FPS))
             
         _, sample_frame = cap.read()
         self.frame_dim = [int(bf*self.image_resize) for bf in sample_frame.shape]
@@ -733,7 +743,7 @@ class Annotator:
                     
                     # Deal with the keyboard input
                     toc = int((time.time()-tic)*1000)
-                    wait = int(np.max((1, delay-toc)))
+                    wait = int(np.max((1, self.delay-toc)))
                     key_input = cv2.waitKey(wait)
                     if key_input == -1:
                         continue
