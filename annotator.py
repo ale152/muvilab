@@ -681,7 +681,7 @@ class Annotator:
         # Initialise the GUI
         self.show_label_guide()
         self.selected_label = 0
-        cv2.namedWindow('MuViLab')
+        cv2.namedWindow('MuViLab', flags=cv2.WINDOW_NORMAL)
         cv2.setMouseCallback('MuViLab', self.click_callback)
         # Show an empty image to open the window
         cv2.imshow('MuViLab', np.zeros((10, 10)))
