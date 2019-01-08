@@ -599,7 +599,12 @@ class Annotator:
                 print('[0] Filter all labels')
                 for i, lab in enumerate(self.labels):
                     print('[%d] %s' % (i+1, lab['name']))
-                filter_i = int(input('Insert label number:'))
+                filter_i = input('Insert label number:')
+                try:
+                    filter_i = int(filter_i)
+                except ValueError:
+                    print('{} is not a valid choice'.format(filter_i))
+                    return run_this_page, run
 
                 if filter_i == 0:
                     filter = None
