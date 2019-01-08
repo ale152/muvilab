@@ -10,7 +10,7 @@ import numpy as np
 import cv2
 from tqdm import tqdm
 
-version_info = (0, 2, 8)
+version_info = (0, 2, 9)
 __version__ = '.'.join(str(c) for c in version_info)
 
 class Annotator:
