@@ -265,17 +265,17 @@ class Annotator:
                                         video_file + 'Impossible to initialise the mosaic.') 
                     fdim = frame.shape
                     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    current_mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
+                    current_mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3), dtype=np.uint8)
                     init = False
                 
                 # Check that the frame is valid
                 if frame is not None and frame.shape == fdim:
                     # Add frame to the mosaic
                     current_mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
-                                   j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
+                                   j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]
                 else:
                     # Show an image with an error message
-                    broken_frame = np.zeros(fdim)
+                    broken_frame = np.zeros(fdim, dtype=np.uint8)
                     pos = (10, fdim[0]//2)
                     cv2.putText(broken_frame, 'No frame #%d' % k_time,
                                 pos, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 
@@ -375,27 +375,28 @@ class Annotator:
 
     def add_timebar(self, img, fraction, color=(0.2, 0.5, 1)):
         '''Add a timebar on the image'''
-        bar = np.zeros((self.timebar_h, img.shape[1], 3))
+        bar = np.zeros((self.timebar_h, img.shape[1], 3), dtype=np.uint8)
         idt = int(fraction*img.shape[1])
-        bar[:, 0:idt, 0] = color[0]
-        bar[:, 0:idt, 1] = color[1]
-        bar[:, 0:idt, 2] = color[2]
+        bar[:, 0:idt, 0] = color[0] * 255
+        bar[:, 0:idt, 1] = color[1] * 255
+        bar[:, 0:idt, 2] = color[2] * 255
         img = np.concatenate((bar, img), axis=0)
         return img
 
 
     def add_statusbar(self, img, frame):
         '''Add a status bar which displays the selected label, current page, and current frame'''
-        img = np.concatenate((img, np.zeros((self.timebar_h, img.shape[1], 3))), axis=0)
+        img = np.concatenate((img, np.zeros((self.timebar_h, img.shape[1], 3), dtype=np.uint8)), axis=0)
         # text parameters
         font_size = 0.4
         height = self.mosaic.shape[1] + int(1.5 * self.timebar_h)
         label = self.labels[self.selected_label]
+        white = (255, 255, 255)
 
         # draw 'Selected label: <label>' at the bottom left
         label_text = 'Selected label: '
         (label_offset, _) = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
-        cv2.putText(img, label_text, (0, height + (label_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
+        cv2.putText(img, label_text, (0, height + (label_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, white)
         (name_offset, _) = cv2.getTextSize(label['name'], cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
         cv2.putText(img, label['name'], (label_offset[0], height + (name_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, label['color'])
 
@@ -403,13 +404,13 @@ class Annotator:
         page_text = 'Page: %i/%i' % (self.current_page + 1, self.N_pages)
         (page_offset, _) = cv2.getTextSize(page_text, cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
         page_x = int((self.mosaic.shape[2] / 2) - (page_offset[0] / 2))
-        cv2.putText(img, page_text, (page_x, height + (page_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
+        cv2.putText(img, page_text, (page_x, height + (page_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, white)
 
         # draw current frame
         time_text = 'Frame: %i/%i' % (frame + 1, self.mosaic.shape[0])
         (time_offset, _) = cv2.getTextSize(time_text, cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
         frame_x = self.mosaic.shape[2] - time_offset[0]
-        cv2.putText(img, time_text, (frame_x, height + (time_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
+        cv2.putText(img, time_text, (frame_x, height + (time_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, white)
         return img
 
 
@@ -634,7 +635,7 @@ class Annotator:
         if chr(key_input) in {'e', 'E'}:
             from skvideo.io import vwrite
             file_name = input('Insert file name: ')
-            vwrite(file_name + '.mp4', self.mosaic*255)
+            vwrite(file_name + '.mp4', self.mosaic)
 
         # Quit
         if chr(key_input) in {'q', 'Q'}:
@@ -776,8 +777,8 @@ class Annotator:
            
 if __name__ == '__main__':
     videos_folder = r'./Videos'
-    labels = [{'name': 'walk', 'color': (0, 1, 0)},
-              {'name': 'run', 'color': (0, 0, 1)},                 
-              {'name': 'jump', 'color': (0, 1, 1)}]
+    labels = [{'name': 'walk', 'color': (0, 255, 0)},
+              {'name': 'run', 'color': (0, 0, 255)},
+              {'name': 'jump', 'color': (0, 255, 255)}]
     annotator = Annotator(labels, videos_folder, annotation_file=r'./labels.json')
     annotator.main()
