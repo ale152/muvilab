@@ -26,7 +26,7 @@ After annotating your videos, you can use the *review function* to check and mod
 ## Installation
 Simply install the following required pagackes:
 
-    $ pip install opencv-python numpy pytube
+    $ pip install opencv-python numpy pytube tqdm matplotlib
     
 and run the demo:
 
@@ -35,15 +35,19 @@ and run the demo:
 The `pytube` package is only needed to download a youtube video to run the demo.
 
 ## Basic usage
-To start MuViLab, simply import the class `Annotator` into your script and set up the labels and the folder containing the video clips. Labels must be a list of dictionaries in the form of `{'name': 'My_Label', 'color': (1,1,1)}`, where `'name'` is your custom name for each annotation and `'color'` is a BGR colour triplet in the interval `[0, 1]`. 
+To start MuViLab, simply import the class `Annotator` into your script and set up the labels and the folder 
+containing the video clips. Labels must be a list of dictionaries in the form of `{'name': 'My_Label', 'color': (255,
+ 255, 255)}`, where `'name'` is your custom name for each annotation and `'color'` is a BGR colour triplet in the 
+ interval 
+`[0, 255]`. 
 The method `.video_to_clips()` allows you to convert a long video into several short clips. If you already have several clips to annotate, skip this step and simply run `main()`:
 
 ```python
 from annotator import Annotator
 # Define the labels
-labels = [{'name': 'text_of_label_1', 'color': (0, 1, 0)},
-        {'name': 'text_of_label_2', 'color': (0, 0, 1)},
-        {'name': 'text_of_label_3', 'color': (0, 1, 1)}]
+labels = [{'name': 'text_of_label_1', 'color': (0, 255, 0)},
+        {'name': 'text_of_label_2', 'color': (0, 0, 255)},
+        {'name': 'text_of_label_3', 'color': (0, 255, 255)}]
 # Initialise MuViLab
 clips_folder = './clips'
 annotator = Annotator(labels, clips_folder, annotation_file='my_labels.json')
