@@ -30,9 +30,9 @@ if not os.path.exists(os.path.join(demo_folder, 'youtube.mp4')):
     
 # Initialise the annotator
 annotator = Annotator([
-        {'name': 'result_table', 'color': (0, 1, 0)},
-        {'name': 'olympics_logo', 'color': (0, 0, 1)},
-        {'name': 'stretching', 'color': (0, 1, 1)}],
+        {'name': 'result_table', 'color': (0, 255, 0)},
+        {'name': 'olympics_logo', 'color': (0, 0, 255)},
+        {'name': 'stretching', 'color': (0, 255, 255)}],
         clips_folder, sort_files_list=True, N_show_approx=100, screen_ratio=16/9, 
         image_resize=1, loop_duration=None, annotation_file='demo_labels.json')
 

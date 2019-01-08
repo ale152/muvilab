@@ -4,16 +4,14 @@ import os
 import json
 import time
 import threading
-import tkinter as tk
-from tkinter import simpledialog
 from shutil import copyfile
+from matplotlib import pyplot as plt
 import numpy as np
 import cv2
+from tqdm import tqdm
 
-version_info = (0, 2, 6)
+version_info = (0, 2, 9)
 __version__ = '.'.join(str(c) for c in version_info)
-
-# TODO: Change the behaviour when labels are different from those in the file loaded
 
 class Annotator:
     '''Annotate multiple videos simultaneously by clicking on them.
@@ -96,9 +94,10 @@ class Annotator:
                 clip_frame_counter = 0
                 clip_counter += 1
                 # Initialise the next clip
-                clip_cap = cv2.VideoWriter(clip_name % clip_counter,
-                                           fourcc, fps, 
-                                           (frame_size[1], frame_size[0]))
+                if video_frame_counter < video_length - 1:
+                    clip_cap = cv2.VideoWriter(clip_name % clip_counter,
+                                               fourcc, fps, 
+                                               (frame_size[1], frame_size[0]))
                 # Set the next frame according to the overlap
                 if overlap:
                     video_frame_counter -= frames_overlap
@@ -117,7 +116,7 @@ class Annotator:
     def find_videos(self):
         '''Loop over the video folder looking for video files'''
         videos_list = []
-        for folder, _, files in os.walk(self.videos_folder):
+        for folder, _, files in tqdm(os.walk(self.videos_folder)):
             # Sort the files in each folder
             if self.sort_files_list:
                 files = sorted(files)
@@ -135,8 +134,10 @@ class Annotator:
         respective annotations'''
         N_videos = len(videos_list)
         self.dataset = [{'video': '', 'label': ''} for _ in range(N_videos)]
+        # Check which annotations have been skipped from the file
+        skipped = [True for _ in range(len(annotations))]
         print('Generating dataset array...')
-        for vid in range(N_videos):
+        for vid in tqdm(range(N_videos)):
             # Add the video to the dataset
             self.dataset[vid]['video'] = videos_list[vid]
             # Add label to the dataset by checking that the realpath is the same
@@ -144,9 +145,23 @@ class Annotator:
             anno = [bf for bf in annotations if bf['video'] == real_path]
             if anno:
                 self.dataset[vid]['label'] = anno[0]['label']
+                skipped[annotations.index(anno[0])] = False
+                    
+        if any(skipped):
+            print('\n/!\\/!\\/!\\ Warning /!\\/!\\/!\\\n'
+                  '%d of the %d labels found were not loaded because no '
+                  'matching file was found in the video folder.\n'
+                  'Sample path from video folder:\n %s\n'
+                  'Sample path from label file:\n %s\n'
+                  '/!\\/!\\/!\\ Warning /!\\/!\\/!\\\n' % (np.sum(skipped),
+                                                       len(annotations),
+                                                       videos_list[0],
+                                                       annotations[0]['video']))
+        else:
+            print('Annotations successfully loaded')
 
 
-    def build_pagination(self, filter_label=False):
+    def build_pagination(self, filter_label=False, filter=None):
         '''Take a list of videos in input and create a pagination array that
         splits the videos into pages'''
         # Filter the videos by labels if requested
@@ -161,7 +176,8 @@ class Annotator:
                     p += 1
                     
                 # Check if the video is labelled
-                if self.dataset[vid]['label']:
+                if (filter and self.dataset[vid]['label'] == filter) or \
+                        (filter is None and self.dataset[vid]['label']):
                     self.pagination[p].append(vid)
                 
             self.N_pages = p+1
@@ -249,17 +265,17 @@ class Annotator:
                                         video_file + 'Impossible to initialise the mosaic.') 
                     fdim = frame.shape
                     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    current_mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3))
+                    current_mosaic = np.zeros((n_frames, fdim[0]*self.Ny, fdim[1]*self.Nx, 3), dtype=np.uint8)
                     init = False
                 
                 # Check that the frame is valid
                 if frame is not None and frame.shape == fdim:
                     # Add frame to the mosaic
                     current_mosaic[k_time, i_scr*fdim[0]:(i_scr+1)*fdim[0],
-                                   j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]/255
+                                   j_scr*fdim[1]:(j_scr+1)*fdim[1], :] = frame[... , :]
                 else:
                     # Show an image with an error message
-                    broken_frame = np.zeros(fdim)
+                    broken_frame = np.zeros(fdim, dtype=np.uint8)
                     pos = (10, fdim[0]//2)
                     cv2.putText(broken_frame, 'No frame #%d' % k_time,
                                 pos, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 
@@ -293,11 +309,11 @@ class Annotator:
         # Set the label
         if event == cv2.EVENT_LBUTTONDOWN:
             label = self.labels[self.selected_label]
-            self.set_label(label['name'], label['color'], x_click, y_click)
+            self.set_label(label['name'], x_click, y_click)
 
         # Detect right click to remove label
         if event == cv2.EVENT_RBUTTONDOWN:
-            self.remove_label(x_click, y_click)
+            self.set_label('', x_click, y_click)
 
 
     def click_to_ij(self, x_click, y_click):
@@ -310,7 +326,7 @@ class Annotator:
         return i_click, j_click
 
 
-    def set_label(self, label_text, label_color, x_click, y_click):
+    def set_label(self, label_text, x_click, y_click):
         '''Set a specific label based on the user click input'''
         # Find the indices of the clicked sequence
         i_click, j_click = self.click_to_ij(x_click, y_click)
@@ -322,20 +338,6 @@ class Annotator:
             self.dataset[vid_in_page[ind_click]]['label'] = label_text
         except IndexError:
             print('No video found in position (%d, %d)' % (i_click, j_click))
-        
-        # Update the rectangles
-        self.update_rectangles()
-
-
-    def remove_label(self, x_click, y_click):
-        '''Remove label from the annotations'''
-        # Find the indices of the clicked sequence
-        i_click, j_click = self.click_to_ij(x_click, y_click)
-        
-        # Convert i and j click into a single index
-        vid_in_page = self.pagination[self.current_page]
-        ind_click  = j_click*self.Ny + i_click
-        self.dataset[vid_in_page[ind_click]]['label'] = ''
         
         # Update the rectangles
         self.update_rectangles()
@@ -373,26 +375,28 @@ class Annotator:
 
     def add_timebar(self, img, fraction, color=(0.2, 0.5, 1)):
         '''Add a timebar on the image'''
-        bar = np.zeros((self.timebar_h, img.shape[1], 3))
+        bar = np.zeros((self.timebar_h, img.shape[1], 3), dtype=np.uint8)
         idt = int(fraction*img.shape[1])
-        bar[:, 0:idt, 0] = color[0]
-        bar[:, 0:idt, 1] = color[1]
-        bar[:, 0:idt, 2] = color[2]
+        bar[:, 0:idt, 0] = color[0] * 255
+        bar[:, 0:idt, 1] = color[1] * 255
+        bar[:, 0:idt, 2] = color[2] * 255
         img = np.concatenate((bar, img), axis=0)
         return img
 
+
     def add_statusbar(self, img, frame):
         '''Add a status bar which displays the selected label, current page, and current frame'''
-        img = np.concatenate((img, np.zeros((self.timebar_h, img.shape[1], 3))), axis=0)
+        img = np.concatenate((img, np.zeros((self.timebar_h, img.shape[1], 3), dtype=np.uint8)), axis=0)
         # text parameters
         font_size = 0.4
         height = self.mosaic.shape[1] + int(1.5 * self.timebar_h)
         label = self.labels[self.selected_label]
+        white = (255, 255, 255)
 
         # draw 'Selected label: <label>' at the bottom left
         label_text = 'Selected label: '
         (label_offset, _) = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
-        cv2.putText(img, label_text, (0, height + (label_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
+        cv2.putText(img, label_text, (0, height + (label_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, white)
         (name_offset, _) = cv2.getTextSize(label['name'], cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
         cv2.putText(img, label['name'], (label_offset[0], height + (name_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, label['color'])
 
@@ -400,14 +404,15 @@ class Annotator:
         page_text = 'Page: %i/%i' % (self.current_page + 1, self.N_pages)
         (page_offset, _) = cv2.getTextSize(page_text, cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
         page_x = int((self.mosaic.shape[2] / 2) - (page_offset[0] / 2))
-        cv2.putText(img, page_text, (page_x, height + (page_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
+        cv2.putText(img, page_text, (page_x, height + (page_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, white)
 
         # draw current frame
         time_text = 'Frame: %i/%i' % (frame + 1, self.mosaic.shape[0])
         (time_offset, _) = cv2.getTextSize(time_text, cv2.FONT_HERSHEY_SIMPLEX, font_size, 1)
         frame_x = self.mosaic.shape[2] - time_offset[0]
-        cv2.putText(img, time_text, (frame_x, height + (time_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, (1,1,1))
+        cv2.putText(img, time_text, (frame_x, height + (time_offset[1] // 2)), cv2.FONT_HERSHEY_SIMPLEX, font_size, white)
         return img
+
 
     def load_annotations(self):
         '''Load annotations from self.annotation_file'''
@@ -422,7 +427,16 @@ class Annotator:
             except json.JSONDecodeError:
                 print('Unable to load annotations from %s' % self.annotation_file)
                 return []
-            
+
+        # Check if labels were provided when running the script
+        if not self.labels:
+            extracted = list(sorted(set([bf['label'] for bf in annotations])))
+            self.labels = []
+            for i, lab in enumerate(extracted):
+                col = plt.cm.jet(i/len(extracted))[0:3]
+                self.labels.append({'name':lab, 'color':col})
+            print('Labels were not provided. The following labels were automatically extracted from %s' % self.annotation_file)
+
         # Check for absolute/relative paths of annotated videos and
         # make sure that labels are valid
         valid_labels = {bf['name'] for bf in self.labels}
@@ -437,10 +451,14 @@ class Annotator:
             
             # Check if the label is part of the valid set
             if anno['label'] and anno['label'] not in valid_labels:
-                print(('Found label "%s" in %s, not compatible with %s. ' +
-                      'All the labels will be discarded') %
-                      (anno['label'], self.annotation_file, valid_labels))
-                return []
+                msg = 'The label "%s" was found in %s.\n' \
+                  'This label is not compatible with the labels ' \
+                  'specified when initialising MuViLab:\n %s\n ' \
+                  'Please check the labels used to initialise the ' \
+                  'Annotator class' % (anno['label'], self.annotation_file, 
+                                         valid_labels)
+                raise Exception(msg)
+
             
         return annotations
 
@@ -542,9 +560,8 @@ class Annotator:
         # Go to page
         if chr(key_input) in {'g', 'G'}:
             # Show the dialog
-            root = tk.Tk()
-            root.withdraw()
-            answer = simpledialog.askstring('Go to page', 'Insert page number (out of %d)' % self.N_pages)
+            print('Go to page')
+            answer = input('Insert page number (out of %d)' % self.N_pages)
             try:
                 answer = int(answer)
                 if answer < 1:
@@ -577,14 +594,53 @@ class Annotator:
                 self.delete_cache = True
                 run_this_page = False
             else:
+                # Ask the user which label to review
+                print('Which label do you want to filter?\n Labels available:')
+                print('[0] Filter all labels')
+                for i, lab in enumerate(self.labels):
+                    print('[%d] %s' % (i+1, lab['name']))
+                filter_i = input('Insert label number:')
+                try:
+                    filter_i = int(filter_i)
+                except ValueError:
+                    print('{} is not a valid choice'.format(filter_i))
+                    return run_this_page, run
+
+                if filter_i == 0:
+                    filter = None
+                else:
+                    filter = self.labels[filter_i-1]['name']
+
                 # Update the pagination using labelled videos only
-                self.build_pagination(filter_label=True)
-                print('Entering reviewing mode. Press "r" again to quit')
-                self.remember_page = self.current_page
-                self.current_page = 0
-                self.review_mode = True
-                self.delete_cache = True
-                run_this_page = False
+                self.build_pagination(filter_label=True, filter=filter)
+                # Check that there are labels
+                if self.pagination[0]:
+                    print('Entering reviewing mode. Press "r" again to quit')
+                    self.remember_page = self.current_page
+                    self.current_page = 0
+                    self.review_mode = True
+                    self.delete_cache = True
+                    run_this_page = False
+                else:
+                    print('No videos found with label %s. Please annotate some videos before reviewing the labels' %
+                          filter)
+                    self.build_pagination(filter_label=False)
+
+        # Speed up the loop
+        if chr(key_input) in {'+'}:
+            self.delay /= 1.5
+            print('Delay decreased to %g' % self.delay)
+
+        # Speed up the loop
+        if chr(key_input) in {'-'}:
+            self.delay *= 1.5
+            print('Delay increased to %g' % self.delay)
+
+        # Extract video
+        if chr(key_input) in {'e', 'E'}:
+            from skvideo.io import vwrite
+            file_name = input('Insert file name: ')
+            vwrite(file_name + '.mp4', self.mosaic)
 
         # Quit
         if chr(key_input) in {'q', 'Q'}:
@@ -596,20 +652,22 @@ class Annotator:
 
     def main(self):
         # Find video files in the video folder
+        print('Looking for videos in {}'.format(self.videos_folder))
         videos_list = self.find_videos()
         if not videos_list:
             print('No videos found at %s' % self.videos_folder)
             return -1
         
         # Calculate the video frame sizes and loop duration
+        print('Inspecting a sample video {}'.format(videos_list[0]))
         cap = cv2.VideoCapture(videos_list[0])
         if self.loop_duration:
             # Loop duration defined by the user
             n_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-            delay = int(self.loop_duration*1000/n_frames)     
+            self.delay = int(self.loop_duration*1000/n_frames)
         else:
             # Automatic loop duration based on fps
-            delay = int(1000/cap.get(cv2.CAP_PROP_FPS))
+            self.delay = int(1000/cap.get(cv2.CAP_PROP_FPS))
             
         _, sample_frame = cap.read()
         self.frame_dim = [int(bf*self.image_resize) for bf in sample_frame.shape]
@@ -619,7 +677,8 @@ class Annotator:
         self.Ny = int(np.sqrt(self.N_show_approx/self.screen_ratio * self.frame_dim[1]/self.frame_dim[0]))
         self.Nx = int(np.sqrt(self.N_show_approx*self.screen_ratio * self.frame_dim[0]/self.frame_dim[1]))
  
-       # Load existing annotations and build pagination
+        # Load existing annotations and build pagination
+        print('Loading annotations...')
         existing_annotations = self.load_annotations()
         self.build_dataset(videos_list, existing_annotations)
         self.build_pagination()
@@ -632,7 +691,7 @@ class Annotator:
         # Initialise the GUI
         self.show_label_guide()
         self.selected_label = 0
-        cv2.namedWindow('MuViLab')
+        cv2.namedWindow('MuViLab', flags=cv2.WINDOW_NORMAL)
         cv2.setMouseCallback('MuViLab', self.click_callback)
         # Show an empty image to open the window
         cv2.imshow('MuViLab', np.zeros((10, 10)))
@@ -694,7 +753,7 @@ class Annotator:
                     
                     # Deal with the keyboard input
                     toc = int((time.time()-tic)*1000)
-                    wait = int(np.max((1, delay-toc)))
+                    wait = int(np.max((1, self.delay-toc)))
                     key_input = cv2.waitKey(wait)
                     if key_input == -1:
                         continue
@@ -723,8 +782,8 @@ class Annotator:
            
 if __name__ == '__main__':
     videos_folder = r'./Videos'
-    labels = [{'name': 'walk', 'color': (0, 1, 0)},
-              {'name': 'run', 'color': (0, 0, 1)},                 
-              {'name': 'jump', 'color': (0, 1, 1)}]
+    labels = [{'name': 'walk', 'color': (0, 255, 0)},
+              {'name': 'run', 'color': (0, 0, 255)},
+              {'name': 'jump', 'color': (0, 255, 255)}]
     annotator = Annotator(labels, videos_folder, annotation_file=r'./labels.json')
     annotator.main()
