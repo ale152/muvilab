@@ -8,6 +8,7 @@ from shutil import copyfile
 from matplotlib import pyplot as plt
 import numpy as np
 import cv2
+from tqdm import tqdm
 
 version_info = (0, 2, 8)
 __version__ = '.'.join(str(c) for c in version_info)
@@ -115,7 +116,7 @@ class Annotator:
     def find_videos(self):
         '''Loop over the video folder looking for video files'''
         videos_list = []
-        for folder, _, files in os.walk(self.videos_folder):
+        for folder, _, files in tqdm(os.walk(self.videos_folder)):
             # Sort the files in each folder
             if self.sort_files_list:
                 files = sorted(files)
@@ -136,7 +137,7 @@ class Annotator:
         # Check which annotations have been skipped from the file
         skipped = [True for _ in range(len(annotations))]
         print('Generating dataset array...')
-        for vid in range(N_videos):
+        for vid in tqdm(range(N_videos)):
             # Add the video to the dataset
             self.dataset[vid]['video'] = videos_list[vid]
             # Add label to the dataset by checking that the realpath is the same
@@ -645,12 +646,14 @@ class Annotator:
 
     def main(self):
         # Find video files in the video folder
+        print('Looking for videos in {}'.format(self.videos_folder))
         videos_list = self.find_videos()
         if not videos_list:
             print('No videos found at %s' % self.videos_folder)
             return -1
         
         # Calculate the video frame sizes and loop duration
+        print('Inspecting a sample video {}'.format(videos_list[0]))
         cap = cv2.VideoCapture(videos_list[0])
         if self.loop_duration:
             # Loop duration defined by the user
@@ -669,6 +672,7 @@ class Annotator:
         self.Nx = int(np.sqrt(self.N_show_approx*self.screen_ratio * self.frame_dim[0]/self.frame_dim[1]))
  
         # Load existing annotations and build pagination
+        print('Loading annotations...')
         existing_annotations = self.load_annotations()
         self.build_dataset(videos_list, existing_annotations)
         self.build_pagination()
